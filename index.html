@@ -1,14 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>$SPITOUT – Spit It Out</title>
 
-  <!-- Solana -->
+  <!-- Solana Web3 & SPL Token (ohne Wallet-Adapter – direkt Phantom) -->
   <script src="https://unpkg.com/@solana/web3.js@1.91.4/lib/index.iife.min.js"></script>
   <script src="https://unpkg.com/@solana/spl-token@0.3.11/lib/index.iife.min.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter@latest/lib/index.iife.js"></script>
 
   <style>
     :root {
@@ -197,10 +196,10 @@
 
   <img id="logo" src="logo.png" alt="$SPITOUT Logo" />
   <h1>$SPITOUT</h1>
-  <div id="status">Connect wallet to spit it out.</div>
+  <div id="status">Verbinde deine Wallet, um zu posten.</div>
 
   <div class="controls">
-    <button id="connectBtn">Connect Wallet</button>
+    <button id="connectBtn">Wallet verbinden</button>
     <div class="small" id="balanceInfo">Balance: —</div>
   </div>
 
@@ -209,59 +208,59 @@
 
     <div id="composer">
       <input id="commentInput" placeholder="Spit it out..." disabled />
-      <button id="sendBtn" disabled>Send</button>
+      <button id="sendBtn" disabled>Senden</button>
     </div>
 
     <div class="rules">
-      1 Post = 1 $SPITOUT | Min. 30 $SPITOUT to post
+      1 Post = 1 $SPITOUT | Mind. 30 $SPITOUT zum Posten
     </div>
   </div>
 
-  <!-- FAQ -->
+  <!-- FAQ (wie vorher) -->
   <div class="faq">
-    <h3>FAQ – What is $SPITOUT?</h3>
+    <h3>FAQ – Was ist $SPITOUT?</h3>
     <ul>
-      <li><strong>$SPITOUT</strong> is the unfiltered truth booth on Solana.</li>
-      <li>No rules. No moderation. No logs.</li>
-      <li>Post anything: rage, love, secrets, sins, dreams, chaos.</li>
-      <li>Client-only — your words vanish when you reload.</li>
+      <li><strong>$SPITOUT</strong> ist die unzensierte Wahrheit auf Solana.</li>
+      <li>Keine Regeln. Keine Moderation. Keine Logs.</li>
+      <li>Poste alles: Wut, Liebe, Geheimnisse, Sünden, Träume, Chaos.</li>
+      <li>Client-only – deine Worte verschwinden beim Reload.</li>
     </ul>
 
-    <h3>Why pay 1 $SPITOUT per post?</h3>
+    <h3>Warum 1 $SPITOUT pro Post?</h3>
     <ul>
-      <li>Prevents spam.</li>
-      <li>Makes every word <strong>cost something</strong>.</li>
-      <li>You pay to be heard — not to be silenced.</li>
+      <li>Verhindert Spam.</li>
+      <li>Jedes Wort <strong>kostet etwas</strong>.</li>
+      <li>Du zahlst, um gehört zu werden – nicht, um zum Schweigen gebracht zu werden.</li>
     </ul>
 
-    <h3>What can I say?</h3>
+    <h3>Was kann ich sagen?</h3>
     <ul>
-      <li>"I hate my job and want to burn it down."</li>
-      <li>"I’m in love with someone I shouldn’t be."</li>
-      <li>"If there were no laws, I’d…"</li>
-      <li>"I wish I was dead. Or alive. Or both."</li>
-      <li>Anything. Everything. Nothing.</li>
+      <li>"Ich hasse meinen Job und will ihn abfackeln."</li>
+      <li>"Ich bin verliebt in jemanden, den ich nicht sollte."</li>
+      <li>"Wenn es keine Gesetze gäbe, würde ich…"</li>
+      <li>"Ich wünsche mir den Tod. Oder Leben. Oder beides."</li>
+      <li>Alles. Nichts. Egal.</li>
     </ul>
 
-    <h3>Is it anonymous?</h3>
+    <h3>Ist es anonym?</h3>
     <ul>
-      <li>Yes. No wallet linked to posts. No backend. No trace.</li>
-      <li>Only you and the void.</li>
+      <li>Ja. Kein Wallet-Link zu Posts. Kein Backend. Keine Spur.</li>
+      <li>Nur du und das Vakuum.</li>
     </ul>
 
-    <h3>Why 1 $SPITOUT = 1 USD?</h3>
+    <h3>Warum 1 $SPITOUT = 1 USD?</h3>
     <ul>
-      <li>Simple. Clean. Final.</li>
-      <li>One truth = one dollar.</li>
+      <li>Einfach. Sauber. Final.</li>
+      <li>Eine Wahrheit = ein Euro.</li>
     </ul>
   </div>
 
   <script>
   (async () => {
 
-    // CONFIG
+    // CONFIG (wie vorher)
     const TREASURY_WALLET = new solanaWeb3.PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    const SPITOUT_MINT = "REPLACE_WITH_YOUR_MINT_ADDRESS"; // AFTER LAUNCH
+    const SPITOUT_MINT = "REPLACE_WITH_YOUR_MINT_ADDRESS"; // NACH LAUNCH
     const COIN_PRICE_USD = 1.0;
     const POST_COST_USD = 1;
     const MIN_BALANCE_USD = 30;
@@ -279,7 +278,7 @@
     const commentsDiv = document.getElementById("comments");
 
     let userPubkey = null;
-    let wallet = null;
+    let phantom = null; // Nur Phantom
 
     const AVATARS = [
       "https://i.imgur.com/Pepe1.png",
@@ -303,37 +302,44 @@
       return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    function showStatus(txt) { statusEl.innerText = txt; }
+    function showStatus(txt) { 
+      statusEl.innerText = txt; 
+      console.log(txt); // Für Debugging in Console
+    }
 
-    // WALLET CONNECT
+    // WALLET CONNECT – DIREKT FÜR PHANTOM
     async function connectWallet() {
-      if (wallet) await wallet.disconnect();
-
-      const wallets = window.solanaWallets || [];
-      const available = wallets.filter(w => w.adapter?.readyState === "Installed" || w.ready);
-      if (available.length === 0) {
-        alert("No wallet found. Install Phantom, Backpack, or Solflare.");
-        return;
+      if (phantom) {
+        try {
+          await phantom.disconnect();
+        } catch (e) {}
       }
 
-      wallet = available[0];
-      try {
-        await wallet.connect();
-        userPubkey = new PublicKey(wallet.publicKey.toBytes());
-        connectBtn.innerText = `Connected`;
-        showStatus(`Connected: ${wallet.name}`);
+      if ('solana' in window && window.solana && window.solana.isPhantom) {
+        phantom = window.solana;
+        try {
+          // Auto-Connect wenn schon trusted
+          await phantom.connect({ onlyIfTrusted: true });
+        } catch (e) {
+          // Sonst normal connect
+          await phantom.connect();
+        }
+        userPubkey = phantom.publicKey;
+        connectBtn.innerText = "Verbunden";
+        showStatus(`Verbunden: ${userPubkey.toBase58().slice(0, 8)}...`);
         await updateBalance();
-      } catch (e) {
-        showStatus("Connection failed.");
+      } else {
+        showStatus("Phantom Wallet nicht gefunden. Installiere es hier: https://phantom.app");
+        alert("Installiere Phantom Wallet und lade die Seite neu.");
       }
     }
 
-    // BALANCE
+    // BALANCE CHECK (wie vorher)
     async function updateBalance() {
       if (!userPubkey) return;
 
       if (SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS") {
-        showStatus("Token not launched yet. Mint address pending.");
+        showStatus("Token noch nicht gelauncht – Mint fehlt.");
         balanceInfo.innerText = "Launch pending...";
         commentInput.disabled = sendBtn.disabled = true;
         return;
@@ -353,20 +359,21 @@
         if (balance >= MIN_BALANCE_USD) {
           commentInput.disabled = false;
           sendBtn.disabled = false;
-          showStatus(`Ready to spit.`);
+          showStatus("Bereit zum Posten!");
         } else {
           commentInput.disabled = true;
           sendBtn.disabled = true;
-          showStatus(`Need 30 $SPITOUT (You have ${balance.toFixed(2)})`);
+          showStatus(`Brauchst 30 $SPITOUT (hast ${balance.toFixed(2)})`);
         }
       } catch (err) {
-        showStatus("Failed to load balance.");
+        showStatus("Fehler beim Laden der Balance.");
+        console.error(err);
       }
     }
 
-    // POST
+    // POST COMMENT (angepasst für Phantom)
     async function postComment(text) {
-      if (!wallet || !userPubkey) return;
+      if (!phantom || !userPubkey) return alert("Wallet nicht verbunden.");
 
       const amount = 1 * (10 ** DECIMALS);
       try {
@@ -381,47 +388,65 @@
         const { blockhash } = await connection.getLatestBlockhash();
         tx.recentBlockhash = blockhash;
 
-        const signed = await wallet.signTransaction(tx);
+        const signed = await phantom.signTransaction(tx);
         const sig = await connection.sendRawTransaction(signed.serialize());
         await connection.confirmTransaction(sig, 'confirmed');
 
         addComment(text);
         commentInput.value = "";
         await updateBalance();
+        showStatus("Post gesendet!");
       } catch (e) {
-        alert("Error: " + (e.message || "Transaction failed"));
+        console.error(e);
+        alert("Fehler: " + (e.message || "Transaktion fehlgeschlagen"));
       }
     }
 
     // EVENTS
-    connectBtn.onclick = connectWallet;
-    sendBtn.onclick = async () => {
+    connectBtn.addEventListener('click', connectWallet);
+
+    sendBtn.addEventListener('click', async () => {
       const text = commentInput.value.trim();
       if (!text) return;
       sendBtn.disabled = true;
       commentInput.disabled = true;
       await postComment(text);
       setTimeout(updateBalance, 1000);
-    };
+    });
 
     commentInput.addEventListener("keydown", e => {
       if (e.key === "Enter" && !sendBtn.disabled) sendBtn.click();
     });
 
-    // INIT
-    addComment("Welcome to $SPITOUT – the place where truth costs $1.");
-    addComment("No filters. No logs. No mercy.");
+    // INIT & AUTO-CONNECT
+    addComment("Willkommen bei $SPITOUT – der Ort, wo Wahrheit 1€ kostet.");
+    addComment("Keine Filter. Keine Logs. Keine Gnade.");
 
-    if (window.solanaWallets) {
-      window.solanaWallets.forEach(w => {
-        w.on("disconnect", () => {
-          userPubkey = null;
-          wallet = null;
-          connectBtn.innerText = "Connect Wallet";
-          showStatus("Wallet disconnected.");
-          balanceInfo.innerText = "Balance: —";
-          commentInput.disabled = sendBtn.disabled = true;
-        });
+    // Auto-Connect wenn schon trusted (nach Page-Load)
+    setTimeout(async () => {
+      if ('solana' in window && window.solana && window.solana.isPhantom) {
+        phantom = window.solana;
+        try {
+          await phantom.connect({ onlyIfTrusted: true });
+          userPubkey = phantom.publicKey;
+          connectBtn.innerText = "Verbunden";
+          showStatus(`Auto-verbunden: ${userPubkey.toBase58().slice(0, 8)}...`);
+          await updateBalance();
+        } catch (e) {
+          // Nicht trusted – warte auf Button
+        }
+      }
+    }, 1000);
+
+    // Disconnect-Handler
+    if (phantom) {
+      phantom.on('disconnect', () => {
+        userPubkey = null;
+        phantom = null;
+        connectBtn.innerText = "Wallet verbinden";
+        showStatus("Wallet getrennt.");
+        balanceInfo.innerText = "Balance: —";
+        commentInput.disabled = sendBtn.disabled = true;
       });
     }
 
