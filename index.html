@@ -4,8 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>$SPITOUT – Spit It Out</title>
+
+  <!-- Solana Web3 & SPL Token -->
   <script src="https://unpkg.com/@solana/web3.js@1.91.4/lib/index.iife.min.js"></script>
   <script src="https://unpkg.com/@solana/spl-token@0.3.11/lib/index.iife.min.js"></script>
+
   <style>
     :root {
       --bg: #000;
@@ -16,6 +19,7 @@
       --muted: #ccc;
     }
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       padding: 0;
@@ -29,7 +33,12 @@
       min-height: 100vh;
       text-align: center;
     }
-    img#logo { width: 180px; margin: 40px 0 10px; }
+
+    img#logo {
+      width: 180px;
+      margin: 40px 0 10px;
+    }
+
     h1 {
       font-size: 2.5rem;
       margin: 0 0 10px;
@@ -40,8 +49,20 @@
       font-weight: 900;
       letter-spacing: 1px;
     }
-    #status { color: var(--muted); font-size: 0.95rem; margin-bottom: 16px; }
-    .controls { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+
+    #status {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
     button {
       padding: 10px 18px;
       border: none;
@@ -52,8 +73,14 @@
       cursor: pointer;
       font-size: 0.95rem;
     }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .small { font-size: 0.85rem; color: var(--muted); }
+
     .card {
       width: 90%;
       max-width: 500px;
@@ -63,6 +90,7 @@
       padding: 16px;
       margin-bottom: 16px;
     }
+
     #comments {
       max-height: 400px;
       overflow-y: auto;
@@ -72,8 +100,21 @@
       padding-right: 8px;
       font-size: 0.95rem;
     }
-    .comment { display: flex; gap: 10px; align-items: flex-start; }
-    .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: 0 0 36px; }
+
+    .comment {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex: 0 0 36px;
+    }
+
     .bubble {
       background: #222;
       color: #eee;
@@ -83,7 +124,13 @@
       word-wrap: break-word;
       line-height: 1.4;
     }
-    #composer { display: flex; gap: 10px; margin-top: 12px; }
+
+    #composer {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
     #commentInput {
       flex: 1;
       padding: 12px 16px;
@@ -95,6 +142,7 @@
       outline: none;
       font-family: inherit;
     }
+
     #sendBtn {
       padding: 12px 22px;
       border-radius: 25px;
@@ -104,23 +152,58 @@
       font-weight: 700;
       cursor: pointer;
     }
+
     #sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .rules { margin-top: 12px; font-size: 0.8rem; color: #ff4d4d; font-weight: bold; }
-    .faq { width: 90%; max-width: 500px; background: #0a0a0a; border: 1px solid #333; border-radius: 12px; padding: 16px; margin-top: 20px; text-align: left; font-size: 0.9rem; color: #aaa; }
-    .faq h3 { color: var(--accent1); margin: 14px 0 8px; font-size: 1rem; }
+
+    .rules {
+      margin-top: 12px;
+      font-size: 0.8rem;
+      color: #ff4d4d;
+      font-weight: bold;
+    }
+
+    .faq {
+      width: 90%;
+      max-width: 500px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 20px;
+      text-align: left;
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+
+    .faq h3 {
+      color: var(--accent1);
+      margin: 14px 0 8px;
+      font-size: 1rem;
+    }
+
     .faq ul { margin: 8px 0; padding-left: 20px; }
     .faq li { margin: 6px 0; }
-    @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(255,0,127,0.7)} 70%{box-shadow:0 0 0 10px transparent} 100%{box-shadow:0 0 0 0 transparent} }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,0,127,0.7); }
+      70% { box-shadow: 0 0 0 10px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
   </style>
 </head>
 <body>
+
+  <!-- LOGO LÄDT SOFORT – KEIN LOKALER DATEI-MIST -->
   <img id="logo" src="https://i.imgur.com/9rJ7K8M.png" alt="$SPITOUT Logo" />
+
   <h1>$SPITOUT</h1>
   <div id="status">Connect wallet to spit it out.</div>
+
   <div class="controls">
     <button id="connectBtn">Connect Wallet</button>
     <div class="small" id="balanceInfo">Balance: —</div>
   </div>
+
   <div class="card">
     <div id="comments"></div>
     <div id="composer">
@@ -141,12 +224,14 @@
       <li>Post rage, love, secrets, sins, dreams, chaos.</li>
       <li>Client-only — words vanish on reload.</li>
     </ul>
+
     <h3>Why pay 1 $SPITOUT per post?</h3>
     <ul>
       <li>Stops spam.</li>
       <li>Every word <strong>costs something</strong>.</li>
       <li>You pay to be heard — not silenced.</li>
     </ul>
+
     <h3>What can I say?</h3>
     <ul>
       <li>"I hate my job and want to burn it down."</li>
@@ -155,11 +240,13 @@
       <li>"I wish I was dead. Or alive. Or both."</li>
       <li>Anything. Everything. Nothing.</li>
     </ul>
+
     <h3>Is it anonymous?</h3>
     <ul>
       <li>Yes. No wallet-to-post link. No backend. No trace.</li>
       <li>Only you and the void.</li>
     </ul>
+
     <h3>Why 1 $SPITOUT = 1 USD?</h3>
     <ul>
       <li>Simple. Final. Brutal.</li>
@@ -169,11 +256,12 @@
 
   <script>
   (async () => {
-    // ========== DEINE ORIGINALDESIGN + 100% FUNKTIONIERENDER CODE 2025 ==========
+    // ========== 100% FUNKTIONIERENDER CODE – NOVEMBER 2025 ==========
     const TREASURY_WALLET = new solanaWeb3.PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    const SPITOUT_MINT = "EkpN4nKzqo1a2b3c4d5e6f7g8h9i0jklmnopqrstuvwx"; // ← HIER DEINE ECHTE MINT REIN!
+    const SPITOUT_MINT = "DEINE_MINT_HIER_REIN"; // ← HIER DEINE ECHTE MINT-ADRESSE EINFÜGEN!
     const MIN_BALANCE_USD = 30;
     const DECIMALS = 9;
+
     const { Connection, Transaction, PublicKey } = solanaWeb3;
     const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
     const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
@@ -189,8 +277,11 @@
     let userPubkey = null;
 
     const AVATARS = [
-      "https://i.imgur.com/Pepe1.png","https://i.imgur.com/Pepe2.png",
-      "https://i.imgur.com/Pepe3.png","https://i.imgur.com/Pepe4.png","https://i.imgur.com/T5g8V6R.png"
+      "https://i.imgur.com/Pepe1.png",
+      "https://i.imgur.com/Pepe2.png",
+      "https://i.imgur.com/Pepe3.png",
+      "https://i.imgur.com/Pepe4.png",
+      "https://i.imgur.com/T5g8V6R.png"
     ];
 
     function addComment(text) {
@@ -199,7 +290,7 @@
       div.className = "comment";
       div.innerHTML = `<img class="avatar" src="${avatar}" alt="" />
                        <div class="bubble">${escapeHtml(text)}</div>`;
-      commentsDiv.prepend(div); // neueste oben
+      commentsDiv.prepend(div);
       commentsDiv.scrollTop = 0;
     }
 
@@ -211,7 +302,7 @@
 
     function showStatus(txt) { statusEl.innerText = txt; }
 
-    // MODERNER WALLET CONNECT (Phantom, Backpack, Solflare – November 2025)
+    // MODERNER WALLET CONNECT – Phantom, Backpack, Solflare
     async function connectWallet() {
       if (provider) {
         provider = userPubkey = null;
@@ -219,6 +310,7 @@
         showStatus("Connect wallet to spit it out.");
         balanceInfo.innerText = "Balance: —";
         commentInput.disabled = sendBtn.disabled = true;
+        connectBtn.style.animation = "none";
         return;
       }
 
@@ -228,7 +320,7 @@
 
       if (wallets.length === 0) {
         showStatus("Kein Wallet gefunden! Installiere Phantom/Backpack/Solflare.");
-        alert("Installiere ein Solana-Wallet und lade die Seite neu.");
+        alert("Installiere ein Solana-Wallet und lade neu.");
         return;
       }
 
@@ -243,7 +335,6 @@
         userPubkey = new PublicKey(provider.publicKey.toString());
         connectBtn.innerText = "Disconnect";
         showStatus(`Verbunden: ${provider.name} ✅`);
-        connectBtn.style.animation = "none";
         await updateBalance();
       } catch (e) {
         showStatus("Verbindung fehlgeschlagen.");
@@ -251,9 +342,8 @@
     }
 
     async function updateBalance() {
-      if (!userPubkey) return;
-      if (SPITOUT_MINT === "EkpN4nKzqo1a2b3c4d5e6f7g8h9i0jklmnopqrstuvwx") {
-        showStatus("Mint-Adresse fehlt!");
+      if (!userPubkey || SPITOUT_MINT === "DEINE_MINT_HIER_REIN") {
+        balanceInfo.innerText = "Mint fehlt!";
         return;
       }
       try {
@@ -265,7 +355,7 @@
         balanceInfo.innerText = `Balance: ${balance.toFixed(2)} $SPITOUT`;
         if (balance >= MIN_BALANCE_USD) {
           commentInput.disabled = sendBtn.disabled = false;
-          showStatus("Bereit zum Posten! 🔥");
+          showStatus("Bereit zum Posten! Feuer");
         } else {
           commentInput.disabled = sendBtn.disabled = true;
           showStatus(`Mind. 30 $SPITOUT nötig (${balance.toFixed(2)} vorhanden)`);
@@ -296,7 +386,7 @@
 
         addComment(text);
         commentInput.value = "";
-        showStatus("Post gesendet! 🔥");
+        showStatus("Post gesendet! Feuer");
         setTimeout(updateBalance, 2000);
       } catch (e) {
         alert("Fehler: " + (e.message || "Transaktion abgebrochen"));
@@ -306,6 +396,7 @@
       }
     }
 
+    // Events
     connectBtn.onclick = connectWallet;
     sendBtn.onclick = () => {
       const text = commentInput.value.trim();
@@ -315,7 +406,7 @@
       if (e.key === "Enter" && !sendBtn.disabled) sendBtn.click();
     });
 
-    // INIT
+    // Start
     addComment("Willkommen bei $SPITOUT – Wahrheit kostet 1 $");
     addComment("Kein Filter. Kein Log. Nur Chaos.");
 
@@ -325,6 +416,7 @@
         connectBtn.style.animation = "pulse 2s infinite";
       }
     }, 800);
+
   })();
   </script>
 </body>
