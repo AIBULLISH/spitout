@@ -6,9 +6,7 @@
   <title>$SPITOUT – Spit It Out</title>
 
   <!-- Solana -->
-  <script src="https://unpkg.com/@solana/web3.js@1.91.4/lib/index.iife.min.js"></script>
-  <script src="https://unpkg.com/@solana/spl-token@0.3.11/lib/index.iife.min.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter@latest/lib/index.iife.js"></script>
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
 
   <style>
     :root {
@@ -217,7 +215,6 @@
     </div>
   </div>
 
-  <!-- FAQ -->
   <div class="faq">
     <h3>FAQ – What is $SPITOUT?</h3>
     <ul>
@@ -234,42 +231,16 @@
       <li>You pay to be heard — not to be silenced.</li>
     </ul>
 
-    <h3>What can I say?</h3>
-    <ul>
-      <li>"I hate my job and want to burn it down."</li>
-      <li>"I’m in love with someone I shouldn’t be."</li>
-      <li>"If there were no laws, I’d…"</li>
-      <li>"I wish I was dead. Or alive. Or both."</li>
-      <li>Anything. Everything. Nothing.</li>
-    </ul>
-
     <h3>Is it anonymous?</h3>
     <ul>
       <li>Yes. No wallet linked to posts. No backend. No trace.</li>
       <li>Only you and the void.</li>
     </ul>
-
-    <h3>Why 1 $SPITOUT = 1 USD?</h3>
-    <ul>
-      <li>Simple. Clean. Final.</li>
-      <li>One truth = one dollar.</li>
-    </ul>
   </div>
 
   <script>
-  (async () => {
-
-    // CONFIG
-    const TREASURY_WALLET = new solanaWeb3.PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    const SPITOUT_MINT = "REPLACE_WITH_YOUR_MINT_ADDRESS"; // AFTER LAUNCH
-    const COIN_PRICE_USD = 1.0;
-    const POST_COST_USD = 1;
-    const MIN_BALANCE_USD = 30;
-    const DECIMALS = 9;
-
-    const { Connection, Transaction, PublicKey } = solanaWeb3;
-    const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
-    const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+    const { Connection, PublicKey } = solanaWeb3;
+    const connection = new Connection("https://api.mainnet-beta.solana.com");
 
     const connectBtn = document.getElementById("connectBtn");
     const statusEl = document.getElementById("status");
@@ -278,14 +249,14 @@
     const sendBtn = document.getElementById("sendBtn");
     const commentsDiv = document.getElementById("comments");
 
-    let userPubkey = null;
-    let wallet = null;
+    const TREASURY_WALLET = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
+    let provider = null;
+    let publicKey = null;
 
     const AVATARS = [
       "https://i.imgur.com/Pepe1.png",
       "https://i.imgur.com/Pepe2.png",
       "https://i.imgur.com/Pepe3.png",
-      "https://i.imgur.com/Pepe4.png",
       "https://i.imgur.com/T5g8V6R.png"
     ];
 
@@ -303,129 +274,34 @@
       return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    function showStatus(txt) { statusEl.innerText = txt; }
-
-    // WALLET CONNECT
     async function connectWallet() {
-      if (wallet) await wallet.disconnect();
-
-      const wallets = window.solanaWallets || [];
-      const available = wallets.filter(w => w.adapter?.readyState === "Installed" || w.ready);
-      if (available.length === 0) {
-        alert("No wallet found. Install Phantom, Backpack, or Solflare.");
-        return;
-      }
-
-      wallet = available[0];
-      try {
-        await wallet.connect();
-        userPubkey = new PublicKey(wallet.publicKey.toBytes());
-        connectBtn.innerText = `Connected`;
-        showStatus(`Connected: ${wallet.name}`);
-        await updateBalance();
-      } catch (e) {
-        showStatus("Connection failed.");
+      if (window.solana && window.solana.isPhantom) {
+        provider = window.solana;
+        await provider.connect();
+        publicKey = provider.publicKey;
+        connectBtn.textContent = `Connected: ${publicKey.toString().slice(0,4)}...${publicKey.toString().slice(-4)}`;
+        statusEl.textContent = "Connected with Phantom Wallet.";
+        commentInput.disabled = false;
+        sendBtn.disabled = false;
+      } else {
+        alert("Phantom Wallet not found! Please install Phantom.");
       }
     }
 
-    // BALANCE
-    async function updateBalance() {
-      if (!userPubkey) return;
-
-      if (SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS") {
-        showStatus("Token not launched yet. Mint address pending.");
-        balanceInfo.innerText = "Launch pending...";
-        commentInput.disabled = sendBtn.disabled = true;
-        return;
-      }
-
-      try {
-        const mintPub = new PublicKey(SPITOUT_MINT);
-        const ata = await getAssociatedTokenAddress(mintPub, userPubkey);
-        let balance = 0;
-        try {
-          const acc = await connection.getTokenAccountBalance(ata);
-          balance = Number(acc.value.amount) / (10 ** DECIMALS);
-        } catch (e) { balance = 0; }
-
-        balanceInfo.innerText = `Balance: ${balance.toFixed(2)} $SPITOUT`;
-
-        if (balance >= MIN_BALANCE_USD) {
-          commentInput.disabled = false;
-          sendBtn.disabled = false;
-          showStatus(`Ready to spit.`);
-        } else {
-          commentInput.disabled = true;
-          sendBtn.disabled = true;
-          showStatus(`Need 30 $SPITOUT (You have ${balance.toFixed(2)})`);
-        }
-      } catch (err) {
-        showStatus("Failed to load balance.");
-      }
-    }
-
-    // POST
-    async function postComment(text) {
-      if (!wallet || !userPubkey) return;
-
-      const amount = 1 * (10 ** DECIMALS);
-      try {
-        const mintPub = new PublicKey(SPITOUT_MINT);
-        const userATA = await getAssociatedTokenAddress(mintPub, userPubkey);
-        const treasuryATA = await getAssociatedTokenAddress(mintPub, TREASURY_WALLET);
-
-        const tx = new Transaction().add(
-          createTransferInstruction(userATA, treasuryATA, userPubkey, amount)
-        );
-        tx.feePayer = userPubkey;
-        const { blockhash } = await connection.getLatestBlockhash();
-        tx.recentBlockhash = blockhash;
-
-        const signed = await wallet.signTransaction(tx);
-        const sig = await connection.sendRawTransaction(signed.serialize());
-        await connection.confirmTransaction(sig, 'confirmed');
-
-        addComment(text);
-        commentInput.value = "";
-        await updateBalance();
-      } catch (e) {
-        alert("Error: " + (e.message || "Transaction failed"));
-      }
-    }
-
-    // EVENTS
-    connectBtn.onclick = connectWallet;
-    sendBtn.onclick = async () => {
+    function postComment() {
       const text = commentInput.value.trim();
       if (!text) return;
-      sendBtn.disabled = true;
-      commentInput.disabled = true;
-      await postComment(text);
-      setTimeout(updateBalance, 1000);
-    };
-
-    commentInput.addEventListener("keydown", e => {
-      if (e.key === "Enter" && !sendBtn.disabled) sendBtn.click();
-    });
-
-    // INIT
-    addComment("Welcome to $SPITOUT – the place where truth costs $1.");
-    addComment("No filters. No logs. No mercy.");
-
-    if (window.solanaWallets) {
-      window.solanaWallets.forEach(w => {
-        w.on("disconnect", () => {
-          userPubkey = null;
-          wallet = null;
-          connectBtn.innerText = "Connect Wallet";
-          showStatus("Wallet disconnected.");
-          balanceInfo.innerText = "Balance: —";
-          commentInput.disabled = sendBtn.disabled = true;
-        });
-      });
+      addComment(text);
+      commentInput.value = "";
     }
 
-  })();
+    connectBtn.addEventListener("click", connectWallet);
+    sendBtn.addEventListener("click", postComment);
+    commentInput.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !sendBtn.disabled) postComment();
+    });
+
+    addComment("Welcome to $SPITOUT – where every word costs something.");
   </script>
 </body>
 </html>
