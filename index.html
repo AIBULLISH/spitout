@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>$SPITOUT – Spit It Out</title>
-  <!-- Solana -->
+
+  <!-- Solana Web3 & SPL Token -->
   <script src="https://unpkg.com/@solana/web3.js@1.91.4/lib/index.iife.min.js"></script>
   <script src="https://unpkg.com/@solana/spl-token@0.3.11/lib/index.iife.min.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter@latest/lib/index.iife.js"></script>
+
   <style>
     :root {
       --bg: #000;
@@ -18,7 +19,6 @@
       --muted: #ccc;
     }
     * { box-sizing: border-box; }
-    
     body {
       margin: 0;
       padding: 0;
@@ -32,10 +32,7 @@
       min-height: 100vh;
       text-align: center;
     }
-    img#logo {
-      width: 180px;
-      margin: 40px 0 10px;
-    }
+    img#logo { width: 180px; margin: 40px 0 10px; }
     h1 {
       font-size: 2.5rem;
       margin: 0 0 10px;
@@ -46,17 +43,8 @@
       font-weight: 900;
       letter-spacing: 1px;
     }
-    #status {
-      color: var(--muted);
-      font-size: 0.95rem;
-      margin-bottom: 16px;
-    }
-    .controls {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 20px;
-    }
+    #status { color: var(--muted); font-size: 0.95rem; margin-bottom: 16px; }
+    .controls { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
     button {
       padding: 10px 18px;
       border: none;
@@ -67,10 +55,7 @@
       cursor: pointer;
       font-size: 0.95rem;
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
     .small { font-size: 0.85rem; color: var(--muted); }
     .card {
       width: 90%;
@@ -90,18 +75,8 @@
       padding-right: 8px;
       font-size: 0.95rem;
     }
-    .comment {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-    }
-    .avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      object-fit: cover;
-      flex: 0 0 36px;
-    }
+    .comment { display: flex; gap: 10px; align-items: flex-start; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: 0 0 36px; }
     .bubble {
       background: #222;
       color: #eee;
@@ -111,11 +86,7 @@
       word-wrap: break-word;
       line-height: 1.4;
     }
-    #composer {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-    }
+    #composer { display: flex; gap: 10px; margin-top: 12px; }
     #commentInput {
       flex: 1;
       padding: 12px 16px;
@@ -137,12 +108,7 @@
       cursor: pointer;
     }
     #sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .rules {
-      margin-top: 12px;
-      font-size: 0.8rem;
-      color: #ff4d4d;
-      font-weight: bold;
-    }
+    .rules { margin-top: 12px; font-size: 0.8rem; color: #ff4d4d; font-weight: bold; }
     .faq {
       width: 90%;
       max-width: 500px;
@@ -155,39 +121,31 @@
       font-size: 0.9rem;
       color: #aaa;
     }
-    .faq h3 {
-      color: var(--accent1);
-      margin: 14px 0 8px;
-      font-size: 1rem;
-    }
-    .faq ul {
-      margin: 8px 0;
-      padding-left: 20px;
-    }
-    .faq li {
-      margin: 6px 0;
-    }
+    .faq h3 { color: var(--accent1); margin: 14px 0 8px; font-size: 1rem; }
+    .faq ul { margin: 8px 0; padding-left: 20px; }
+    .faq li { margin: 6px 0; }
   </style>
 </head>
 <body>
+
   <img id="logo" src="logo.png" alt="$SPITOUT Logo" />
   <h1>$SPITOUT</h1>
   <div id="status">Connect wallet to spit it out.</div>
+
   <div class="controls">
     <button id="connectBtn">Connect Wallet</button>
     <div class="small" id="balanceInfo">Balance: —</div>
   </div>
+
   <div class="card">
     <div id="comments"></div>
     <div id="composer">
       <input id="commentInput" placeholder="Spit it out..." disabled />
       <button id="sendBtn" disabled>Send</button>
     </div>
-    <div class="rules">
-      1 Post = 1 $SPITOUT | Min. 30 $SPITOUT to post
-    </div>
+    <div class="rules">1 Post = 1 $SPITOUT | Min. 30 $SPITOUT to post</div>
   </div>
-  <!-- FAQ -->
+
   <div class="faq">
     <h3>FAQ – What is $SPITOUT?</h3>
     <ul>
@@ -221,161 +179,77 @@
       <li>One truth = one dollar.</li>
     </ul>
   </div>
+
   <script>
-  (async () => {
-    // CONFIG
-    const TREASURY_WALLET = new solanaWeb3.PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    const SPITOUT_MINT = "REPLACE_WITH_YOUR_MINT_ADDRESS"; // AFTER LAUNCH
-    const COIN_PRICE_USD = 1.0;
-    const POST_COST_USD = 1;
-    const MIN_BALANCE_USD = 30;
-    const DECIMALS = 9;
-    const { Connection, Transaction, PublicKey } = solanaWeb3;
-    const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
-    const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
-    const connectBtn = document.getElementById("connectBtn");
-    const statusEl = document.getElementById("status");
-    const balanceInfo = document.getElementById("balanceInfo");
-    const commentInput = document.getElementById("commentInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const commentsDiv = document.getElementById("comments");
-    let userPubkey = null;
-    let wallet = null;
-    const AVATARS = [
-      "https://i.imgur.com/Pepe1.png",
-      "https://i.imgur.com/Pepe2.png",
-      "https://i.imgur.com/Pepe3.png",
-      "https://i.imgur.com/Pepe4.png",
-      "https://i.imgur.com/T5g8V6R.png"
-    ];
-    function addComment(text) {
-      const avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
-      const div = document.createElement("div");
-      div.className = "comment";
-      div.innerHTML = `<img class="avatar" src="${avatar}" alt="" />
-                       <div class="bubble">${escapeHtml(text)}</div>`;
-      commentsDiv.appendChild(div);
-      commentsDiv.scrollTop = commentsDiv.scrollHeight;
-    }
-    function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-    function showStatus(txt) { statusEl.innerText = txt; }
-      <!-- Solana Wallet Adapter -->
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter-wallets@latest/lib/index.iife.js"></script>
-  <script>
-    const { Connection, PublicKey, SystemProgram, Transaction } = solanaWeb3;
-    const treasuryWallet = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    // 👉 Hier später deine SPITOUT Token-Adresse einfügen
-    const SPITOUT_TOKEN_MINT = ""; // z. B. new PublicKey("XXXXXXXXXXXX")
-    let provider = null;
-    let publicKey = null;
-    const connection = new Connection("https://api.mainnet-beta.solana.com");
-    const walletButton = document.getElementById("wallet-button");
-    const input = document.getElementById("input");
-    const sendButton = document.getElementById("send-button");
-    const messagesDiv = document.getElementById("messages");
-    const statusDiv = document.getElementById("status");
-    async function connectWallet() {
-      if (window.solana && window.solana.isPhantom) {
-        provider = window.solana;
-        await provider.connect();
-        publicKey = provider.publicKey;
-      } else if (window.solflare) {
-        provider = window.solflare;
-        await provider.connect();
-        publicKey = provider.publicKey;
-      } else {
-        alert("No Solana wallet found! Install Phantom or Solflare.");
-        return;
+    (async () => {
+      // CONFIG
+      const TREASURY_WALLET = new solanaWeb3.PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
+      const SPITOUT_MINT = "REPLACE_WITH_YOUR_MINT_ADDRESS";
+      const MIN_BALANCE_USD = 30;
+      const DECIMALS = 9;
+
+      const { Connection, Transaction, PublicKey } = solanaWeb3;
+      const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
+      const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+
+      const connectBtn = document.getElementById("connectBtn");
+      const statusEl = document.getElementById("status");
+      const balanceInfo = document.getElementById("balanceInfo");
+      const commentInput = document.getElementById("commentInput");
+      const sendBtn = document.getElementById("sendBtn");
+      const commentsDiv = document.getElementById("comments");
+
+      let provider = null;
+      let publicKey = null;
+
+      const AVATARS = [
+        "https://i.imgur.com/Pepe1.png",
+        "https://i.imgur.com/Pepe2.png",
+        "https://i.imgur.com/Pepe3.png",
+        "https://i.imgur.com/Pepe4.png",
+        "https://i.imgur.com/T5g8V6R.png"
+      ];
+
+      function addComment(text) {
+        const avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
+        const div = document.createElement("div");
+        div.className = "comment";
+        div.innerHTML = `<img class="avatar" src="${avatar}" alt="" />
+                         <div class="bubble">${escapeHtml(text)}</div>`;
+        commentsDiv.appendChild(div);
+        commentsDiv.scrollTop = commentsDiv.scrollHeight;
       }
-    }
-    // BALANCE
-    async function updateBalance() {
-      if (!userPubkey) return;
-      if (SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS") {
-        showStatus("Token not launched yet. Mint address pending.");
-        balanceInfo.innerText = "Launch pending...";
-        commentInput.disabled = sendBtn.disabled = true;
-        return;
+
+      function escapeHtml(s) {
+        return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       }
-      try {
-        const mintPub = new PublicKey(SPITOUT_MINT);
-        const ata = await getAssociatedTokenAddress(mintPub, userPubkey);
-        let balance = 0;
-        try {
-          const acc = await connection.getTokenAccountBalance(ata);
-          balance = Number(acc.value.amount) / (10 ** DECIMALS);
-        } catch (e) { balance = 0; }
-        balanceInfo.innerText = `Balance: ${balance.toFixed(2)} $SPITOUT`;
-        if (balance >= MIN_BALANCE_USD) {
-          commentInput.disabled = false;
-          sendBtn.disabled = false;
-          showStatus(`Ready to spit.`);
+
+      function showStatus(txt) { statusEl.innerText = txt; }
+
+      // DEINE NEUE PHANTOM-VERBINDUNG – 1:1 EINGEFÜGT
+      async function connectWallet() {
+        if (window.solana && window.solana.isPhantom) {
+          provider = window.solana;
+          await provider.connect();
+          publicKey = provider.publicKey;
+        } else if (window.solflare) {
+          provider = window.solflare;
+          await provider.connect();
+          publicKey = provider.publicKey;
         } else {
-          commentInput.disabled = true;
-          sendBtn.disabled = true;
-          showStatus(`Need 30 $SPITOUT (You have ${balance.toFixed(2)})`);
+          alert("No Solana wallet found! Install Phantom or Solflare.");
+          return;
         }
-      } catch (err) {
-        showStatus("Failed to load balance.");
-      }
-    }
-    // POST
-    async function postComment(text) {
-      if (!wallet || !userPubkey) return;
-      const amount = 1 * (10 ** DECIMALS);
-      try {
-        const mintPub = new PublicKey(SPITOUT_MINT);
-        const userATA = await getAssociatedTokenAddress(mintPub, userPubkey);
-        const treasuryATA = await getAssociatedTokenAddress(mintPub, TREASURY_WALLET);
-        const tx = new Transaction().add(
-          createTransferInstruction(userATA, treasuryATA, userPubkey, amount)
-        );
-        tx.feePayer = userPubkey;
-        const { blockhash } = await connection.getLatestBlockhash();
-        tx.recentBlockhash = blockhash;
-        const signed = await wallet.signTransaction(tx);
-        const sig = await connection.sendRawTransaction(signed.serialize());
-        await connection.confirmTransaction(sig, 'confirmed');
-        addComment(text);
-        commentInput.value = "";
+        connectBtn.textContent = "Connected: " + publicKey.toString().slice(0,4) + "..." + publicKey.toString().slice(-4);
+        commentInput.disabled = false;
+        sendBtn.disabled = false;
+        statusEl.textContent = "You can now chat. Each post sends 1 USD in SPITOUT.";
         await updateBalance();
-      } catch (e) {
-        alert("Error: " + (e.message || "Transaction failed"));
       }
-    }
-    // EVENTS
-    connectBtn.onclick = connectWallet;
-    sendBtn.onclick = async () => {
-      const text = commentInput.value.trim();
-      if (!text) return;
-      sendBtn.disabled = true;
-      commentInput.disabled = true;
-      await postComment(text);
-      setTimeout(updateBalance, 1000);
-    };
-    commentInput.addEventListener("keydown", e => {
-      if (e.key === "Enter" && !sendBtn.disabled) sendBtn.click();
-    });
-    // INIT
-    addComment("Welcome to $SPITOUT – the place where truth costs $1.");
-    addComment("No filters. No logs. No mercy.");
-    if (window.solanaWallets) {
-      window.solanaWallets.forEach(w => {
-        w.on("disconnect", () => {
-          userPubkey = null;
-          wallet = null;
-          connectBtn.innerText = "Connect Wallet";
-          showStatus("Wallet disconnected.");
-          balanceInfo.innerText = "Balance: —";
+
+      // BALANCE
+      async function updateBalance() {
+        if (!publicKey || SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS") {
+          balanceInfo.innerText = "Launch pending...";
           commentInput.disabled = sendBtn.disabled = true;
-        });
-      });
-    }
-  })();
-  </script>
-</body>
-</html>
+         
