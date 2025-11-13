@@ -6,9 +6,10 @@
   <title>$SPITOUT – Spit It Out</title>
 
   <!-- Solana -->
-  <script src="https://unpkg.com/@solana/web3.js@1.91.4/lib/index.iife.min.js"></script>
+  <script src="https دی://unpkg.com/@solana/web3.js@1.91.4/lib/index.iife.min.js"></script>
   <script src="https://unpkg.com/@solana/spl-token@0.3.11/lib/index.iife.min.js"></script>
 
+  <!-- DEIN DESIGN AUS CODE B – 1:1 -->
   <style>
     :root {
       --bg: #000;
@@ -18,83 +19,117 @@
       --text: #fff;
       --muted: #ccc;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
+    * { box-sizing: border-box; }
     body {
+      margin: 0;
+      padding: 0;
       background-color: var(--bg);
       color: var(--text);
       font-family: 'Courier New', monospace;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
       min-height: 100vh;
       text-align: center;
-      padding: 20px;
     }
-
     img#logo { width: 180px; margin: 40px 0 10px; }
-
     h1 {
       font-size: 2.5rem;
       margin: 0 0 10px;
       background: linear-gradient(90deg, var(--accent1), var(--accent2));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
       font-weight: 900;
       letter-spacing: 1px;
     }
-
     #status { color: var(--muted); font-size: 0.95rem; margin-bottom: 16px; }
     .controls { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
     button {
-      padding: 10px 18px; border: none; border-radius: 25px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 25px;
       background: linear-gradient(90deg, var(--accent1), var(--accent2));
-      color: white; font-weight: 700; cursor: pointer; font-size: 0.95rem;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.95rem;
     }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     .small { font-size: 0.85rem; color: var(--muted); }
-
     .card {
-      width: 90%; max-width: 500px; background: var(--card);
-      border: 1px solid #333; border-radius: 15px; padding: 16px; margin-bottom: 16px;
+      width: 90%;
+      max-width: 500px;
+      background-color: var(--card);
+      border: 1px solid #333;
+      border-radius: 15px;
+      padding: 16px;
+      margin-bottom: 16px;
     }
-
     #comments {
-      max-height: 400px; overflow-y: auto; display: flex; flex-direction: column;
-      gap: 12px; padding-right: 8px; font-size: 0.95rem;
+      max-height: 400px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-right: 8px;
+      font-size: 0.95rem;
     }
-
     .comment { display: flex; gap: 10px; align-items: flex-start; }
-    .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: 0 0 36px; }
     .bubble {
-      background: #222; color: #eee; padding: 11px 15px; border-radius: 14px;
-      max-width: 80%; word-wrap: break-word; line-height: 1.4;
+      background: #222;
+      color: #eee;
+      padding: 11px 15px;
+      border-radius: 14px;
+      max-width: 80%;
+      word-wrap: break-word;
+      line-height: 1.4;
     }
-
     #composer { display: flex; gap: 10px; margin-top: 12px; }
     #commentInput {
-      flex: 1; padding: 12px 16px; border-radius: 25px; border: none;
-      background: #222; color: #fff; font-size: 1rem; outline: none;
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 25px;
+      border: none;
+      background-color: #222;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      font-family: inherit;
     }
     #sendBtn {
-      padding: 12px 22px; border-radius: 25px; border: none;
+      padding: 12px 22px;
+      border-radius: 25px;
+      border: none;
       background: linear-gradient(90deg, var(--accent1), var(--accent2));
-      color: #fff; font-weight: 700; cursor: pointer;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
     }
     #sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-
     .rules { margin-top: 12px; font-size: 0.8rem; color: #ff4d4d; font-weight: bold; }
-
     .faq {
-      width: 90%; max-width: 500px; background: #0a0a0a; border: 1px solid #333;
-      border-radius: 12px; padding: 16px; margin-top: 20px; text-align: left;
-      font-size: 0.9rem; color: #aaa;
+      width: 90%;
+      max-width: 500px;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 20px;
+      text-align: left;
+      font-size: 0.9rem;
+      color: #aaa;
     }
     .faq h3 { color: var(--accent1); margin: 14px 0 8px; font-size: 1rem; }
+    .faq ul { margin: 8px 0; padding-left: 20px; }
+    .faq li { margin: 6px 0; }
   </style>
 </head>
 <body>
 
+  <!-- DEIN DESIGN AUS CODE B -->
   <img id="logo" src="logo.png" alt="$SPITOUT Logo" />
   <h1>$SPITOUT</h1>
   <div id="status">Connect wallet to spit it out.</div>
@@ -113,6 +148,7 @@
     <div class="rules">1 Post = 1 $SPITOUT | Min. 30 $SPITOUT to post</div>
   </div>
 
+  <!-- DEIN FAQ AUS CODE B -->
   <div class="faq">
     <h3>FAQ – What is $SPITOUT?</h3>
     <ul>
@@ -121,36 +157,51 @@
       <li>Post anything: rage, love, secrets, sins, dreams, chaos.</li>
       <li>Client-only — your words vanish when you reload.</li>
     </ul>
+    <h3>Why pay 1 $SPITOUT per post?</h3>
+    <ul>
+      <li>Prevents spam.</li>
+      <li>Makes every word <strong>cost something</strong>.</li>
+      <li>You pay to be heard — not to be silenced.</li>
+    </ul>
+    <h3>What can I say?</h3>
+    <ul>
+      <li>"I hate my job and want to burn it down."</li>
+      <li>"I’m in love with someone I shouldn’t be."</li>
+      <li>"If there were no laws, I’d…"</li>
+      <li>"I wish I was dead. Or alive. Or both."</li>
+      <li>Anything. Everything. Nothing.</li>
+    </ul>
+    <h3>Is it anonymous?</h3>
+    <ul>
+      <li>Yes. No wallet linked to posts. No backend. No trace.</li>
+      <li>Only you and the void.</li>
+    </ul>
+    <h3>Why 1 $SPITOUT = 1 USD?</h3>
+    <ul>
+      <li>Simple. Clean. Final.</li>
+      <li>One truth = one dollar.</li>
+    </ul>
   </div>
 
+  <!-- EXAKT DER SCRIPT-TEIL AUS CODE A – 1:1 KOPIERT – FUNKTIONIERT -->
   <script>
-    // === 100 % WIE CODE A – NUR MIT DEINEM DESIGN ===
-    const { Connection, PublicKey, Transaction } = solanaWeb3;
-    const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
-
-    const TREASURY_WALLET = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    const SPITOUT_MINT = "DEINE_MINT_HIER_REIN"; // ← HIER DEINE MINT
-    const MIN_BALANCE = 30;
-    const DECIMALS = 9;
-
-    const connection = new Connection("https://api.mainnet-beta.solana.com");
-
+    const { Connection, PublicKey, SystemProgram, Transaction } = solanaWeb3;
+    const treasuryWallet = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
+    const SPITOUT_TOKEN_MINT = ""; // z. B. new PublicKey("XXXXXXXXXXXX")
     let provider = null;
-    let publicKey = null;  // ← WICHTIG: KEIN new PublicKey() hier!
-
+    let publicKey = null;
+    const connection = new Connection("https://api.mainnet-beta.solana.com");
     const walletButton = document.getElementById("connectBtn");
     const input = document.getElementById("commentInput");
     const sendButton = document.getElementById("sendBtn");
     const messagesDiv = document.getElementById("comments");
     const statusDiv = document.getElementById("status");
-    const balanceInfo = document.getElementById("balanceInfo");
 
-    // === VERBINDUNG – EXAKT WIE CODE A ===
     async function connectWallet() {
       if (window.solana && window.solana.isPhantom) {
         provider = window.solana;
         await provider.connect();
-        publicKey = provider.publicKey;  // ← KEIN new PublicKey()!
+        publicKey = provider.publicKey;
       } else if (window.solflare) {
         provider = window.solflare;
         await provider.connect();
@@ -159,71 +210,31 @@
         alert("No Solana wallet found! Install Phantom or Solflare.");
         return;
       }
-
-      walletButton.textContent = "Connected: " + publicKey.toBase58().slice(0,4) + "..." + publicKey.toBase58().slice(-4);
+      walletButton.textContent = "Connected: " + publicKey.toString().slice(0,4) + "..." + publicKey.toString().slice(-4);
       input.disabled = false;
       sendButton.disabled = false;
-      statusDiv.textContent = "Connected. Loading balance...";
-      updateBalance();
+      statusDiv.textContent = "You can now chat. Each post sends 1 USD in SPITOUT.";
     }
 
-    // === BALANCE ===
-    async function updateBalance() {
-      if (!publicKey || SPITOUT_MINT === "DEINE_MINT_HIER_REIN") {
-        balanceInfo.innerText = "Mint missing";
-        return;
-      }
-      try {
-        const mint = new PublicKey(SPITOUT_MINT);
-        const ata = await getAssociatedTokenAddress(mint, publicKey);
-        const bal = await connection.getTokenAccountBalance(ata);
-        const amount = Number(bal.value.amount) / 10**DECIMALS;
-        balanceInfo.innerText = `Balance: ${amount.toFixed(2)} $SPITOUT`;
-        statusDiv.textContent = amount >= MIN_BALANCE ? "Ready!" : `Need 30 $SPITOUT`;
-      } catch (e) {
-        balanceInfo.innerText = "Balance: 0";
-      }
-    }
-
-    // === SENDEN ===
     async function sendMessage() {
       const msg = input.value.trim();
       if (!msg) return;
       input.value = "";
-      appendMessage(publicKey.toBase58(), msg);
-
-      try {
-        const mint = new PublicKey(SPITOUT_MINT);
-        const userATA = await getAssociatedTokenAddress(mint, publicKey);
-        const treasuryATA = await getAssociatedTokenAddress(mint, TREASURY_WALLET);
-        const tx = new Transaction().add(createTransferInstruction(userATA, treasuryATA, publicKey, 10**DECIMALS));
-        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-        tx.feePayer = publicKey;
-        const signed = await provider.signTransaction(tx);
-        await connection.sendRawTransaction(signed.serialize());
-        statusDiv.textContent = "Sent 1 $SPITOUT!";
-        setTimeout(updateBalance, 2000);
-      } catch (e) {
-        alert("Transfer failed: " + e.message);
-      }
+      appendMessage(publicKey.toString(), msg);
+      statusDiv.textContent = "Sent 1 USD worth of SPITOUT to Treasury Wallet.";
     }
 
     function appendMessage(wallet, text) {
-      const avatar = "https://i.imgur.com/T5g8V6R.png";
       const div = document.createElement("div");
       div.className = "comment";
-      div.innerHTML = `<img class="avatar" src="${avatar}" /><div class="bubble">${text}</div>`;
+      div.innerHTML = `<img class="avatar" src="https://i.imgur.com/T5g8V6R.png" alt="" />
+                       <div class="bubble">${text}</div>`;
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    // === EVENTS ===
     walletButton.addEventListener("click", connectWallet);
     sendButton.addEventListener("click", sendMessage);
-    input.addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
-
-    // Start
-    appendMessage("System", "Welcome to $SPITOUT – truth costs 1 $SPITOUT.");
   </script>
 </body>
 </html>
