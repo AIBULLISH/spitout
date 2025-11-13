@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>$SPITOUT – Spit It Out</title>
-  <!-- Solana Dependencies (from Code A - simpler, working) -->
+  <!-- Solana Dependencies (Simplified and Corrected) -->
+  <!-- web3.js and spl-token must be loaded to define solanaWeb3 and splToken -->
   <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter-wallets@latest/lib/index.iife.js"></script>
-  <!-- SPL Token for advanced logic in Code B -->
   <script src="https://unpkg.com/@solana/spl-token@0.3.11/lib/index.iife.min.js"></script>
+  <!-- The wallet adapter scripts from Code A are not needed for the direct window.solana approach -->
+  
   <style>
     :root {
       --bg: #000;
@@ -232,8 +232,11 @@
     const POST_COST_USD = 1;
     const MIN_BALANCE_USD = 30;
     const DECIMALS = 9;
+    
+    // Destructure from global objects provided by the imported scripts
     const { Connection, Transaction, PublicKey } = solanaWeb3;
-    const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
+    const { getAssociatedTokenAddress, createTransferInstruction } = splToken; // This is now defined!
+    
     const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
     const connectBtn = document.getElementById("connectBtn");
     const statusEl = document.getElementById("status");
