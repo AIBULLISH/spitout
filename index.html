@@ -180,22 +180,11 @@
       margin: 14px 0 8px;
       font-size: 1rem;
     }
-
-    .faq ul {
-      margin: 8px 0;
-      padding-left: 20px;
-    }
-
-    .faq li {
-      margin: 6px 0;
-    }
   </style>
 </head>
 <body>
 
-  <!-- DEIN LOGO (lokal im Ordner) -->
   <img id="logo" src="logo.png" alt="$SPITOUT Logo" />
-
   <h1>$SPITOUT</h1>
   <div id="status">Connect wallet to spit it out.</div>
 
@@ -215,7 +204,6 @@
     </div>
   </div>
 
-  <!-- FAQ -->
   <div class="faq">
     <h3>FAQ – What is $SPITOUT?</h3>
     <ul>
@@ -224,191 +212,113 @@
       <li>Post anything: rage, love, secrets, sins, dreams, chaos.</li>
       <li>Client-only — your words vanish when you reload.</li>
     </ul>
-    <h3>Why pay 1 $SPITOUT per post?</h3>
-    <ul>
-      <li>Prevents spam.</li>
-      <li>Makes every word <strong>cost something</strong>.</li>
-      <li>You pay to be heard — not to be silenced.</li>
-    </ul>
-    <h3>What can I say?</h3>
-    <ul>
-      <li>"I hate my job and want to burn it down."</li>
-      <li>"I’m in love with someone I shouldn’t be."</li>
-      <li>"If there were no laws, I’d…"</li>
-      <li>"I wish I was dead. Or alive. Or both."</li>
-      <li>Anything. Everything. Nothing.</li>
-    </ul>
-    <h3>Is it anonymous?</h3>
-    <ul>
-      <li>Yes. No wallet linked to posts. No backend. No trace.</li>
-      <li>Only you and the void.</li>
-    </ul>
-    <h3>Why 1 $SPITOUT = 1 USD?</h3>
-    <ul>
-      <li>Simple. Clean. Final.</li>
-      <li>One truth = one dollar.</li>
-    </ul>
   </div>
 
   <script>
-  (async () => {
-    // === CONFIG (aus Code B) ===
-    const TREASURY_WALLET = new solanaWeb3.PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    const SPITOUT_MINT = "DEINE_MINT_HIER_REIN"; // ← HIER DEINE ECHTE MINT EINFÜGEN
-    const MIN_BALANCE_USD = 30;
-    const DECIMALS = 9;
-
+    // === EXAKT WIE IN CODE A – FUNKTIONIERT ===
     const { Connection, PublicKey, Transaction } = solanaWeb3;
     const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
-    const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-    const connectBtn = document.getElementById("connectBtn");
-    const statusEl = document.getElementById("status");
-    const balanceInfo = document.getElementById("balanceInfo");
-    const commentInput = document.getElementById("commentInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const commentsDiv = document.getElementById("comments");
+    const TREASURY_WALLET = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
+    const SPITOUT_MINT = "DEINE_MINT_HIER_REIN"; // ← HIER DEINE MINT
+    const MIN_BALANCE = 30;
+    const DECIMALS = 9;
+
+    const connection = new Connection("https://api.mainnet-beta.solana.com");
 
     let provider = null;
-    let userPubkey = null;
+    let publicKey = null;
 
-    const AVATARS = [
-      "https://i.imgur.com/Pepe1.png",
-      "https://i.imgur.com/Pepe2.png",
-      "https://i.imgur.com/Pepe3.png",
-      "https://i.imgur.com/Pepe4.png",
-      "https://i.imgur.com/T5g8V6R.png"
-    ];
+    const walletButton = document.getElementById("connectBtn");
+    const input = document.getElementById("commentInput");
+    const sendButton = document.getElementById("sendBtn");
+    const messagesDiv = document.getElementById("comments");
+    const statusDiv = document.getElementById("status");
+    const balanceInfo = document.getElementById("balanceInfo");
 
-    function addComment(text) {
-      const avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
-      const div = document.createElement("div");
-      div.className = "comment";
-      div.innerHTML = `<img class="avatar" src="${avatar}" alt="" />
-                       <div class="bubble">${escapeHtml(text)}</div>`;
-      commentsDiv.appendChild(div);
-      commentsDiv.scrollTop = commentsDiv.scrollHeight;
-    }
-
-    function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-
-    function showStatus(txt) { statusEl.innerText = txt; }
-
-    // === WALLET CONNECT AUS CODE A (FUNKTIONIERT) ===
+    // === VERBINDUNG – 1:1 WIE CODE A ===
     async function connectWallet() {
-      if (provider) {
-        await provider.disconnect();
-        provider = userPubkey = null;
-        connectBtn.innerText = "Connect Wallet";
-        showStatus("Connect wallet to spit it out.");
-        balanceInfo.innerText = "Balance: —";
-        commentInput.disabled = sendBtn.disabled = true;
-        return;
-      }
-
       if (window.solana && window.solana.isPhantom) {
         provider = window.solana;
+        await provider.connect();
+        publicKey = provider.publicKey;
       } else if (window.solflare) {
         provider = window.solflare;
+        await provider.connect();
+        publicKey = provider.publicKey;
       } else {
         alert("No Solana wallet found! Install Phantom or Solflare.");
         return;
       }
 
-      try {
-        await provider.connect();
-        userPubkey = new PublicKey(provider.publicKey);
-        connectBtn.innerText = "Connected";
-        showStatus(`Connected: ${userPubkey.toString().slice(0,4)}...${userPubkey.toString().slice(-4)}`);
-        await updateBalance();
-      } catch (e) {
-        showStatus("Connection failed.");
-      }
+      walletButton.textContent = "Connected: " + publicKey.toString().slice(0,4) + "..." + publicKey.toString().slice(-4);
+      input.disabled = false;
+      sendButton.disabled = false;
+      statusDiv.textContent = "Connected. Balance loading...";
+      updateBalance();
     }
 
-    // === BALANCE & POST (aus Code B – funktioniert mit Mint) ===
+    // === BALANCE ===
     async function updateBalance() {
-      if (!userPubkey || SPITOUT_MINT === "DEINE_MINT_HIER_REIN") {
+      if (!publicKey || SPITOUT_MINT === "DEINE_MINT_HIER_REIN") {
         balanceInfo.innerText = "Mint missing";
-        commentInput.disabled = sendBtn.disabled = true;
         return;
       }
-
       try {
-        const mintPub = new PublicKey(SPITOUT_MINT);
-        const ata = await getAssociatedTokenAddress(mintPub, userPubkey);
-        let balance = 0;
-        try {
-          const acc = await connection.getTokenAccountBalance(ata);
-          balance = Number(acc.value.amount) / (10 ** DECIMALS);
-        } catch (e) { balance = 0; }
-
-        balanceInfo.innerText = `Balance: ${balance.toFixed(2)} $SPITOUT`;
-
-        if (balance >= MIN_BALANCE_USD) {
-          commentInput.disabled = false;
-          sendBtn.disabled = false;
-          showStatus("Ready to spit.");
+        const mint = new PublicKey(SPITOUT_MINT);
+        const ata = await getAssociatedTokenAddress(mint, publicKey);
+        const bal = await connection.getTokenAccountBalance(ata);
+        const amount = Number(bal.value.amount) / 10**DECIMALS;
+        balanceInfo.innerText = `Balance: ${amount.toFixed(2)} $SPITOUT`;
+        if (amount >= MIN_BALANCE) {
+          statusDiv.textContent = "Ready to post!";
         } else {
-          commentInput.disabled = true;
-          sendBtn.disabled = true;
-          showStatus(`Need 30 $SPITOUT (You have ${balance.toFixed(2)})`);
+          statusDiv.textContent = `Need 30 $SPITOUT (You have ${amount.toFixed(2)})`;
         }
-      } catch (err) {
-        showStatus("Failed to load balance.");
+      } catch (e) {
+        balanceInfo.innerText = "Balance:";
       }
     }
 
-    async function postComment(text) {
-      if (!provider || !userPubkey) return;
-      sendBtn.disabled = true;
-      commentInput.disabled = true;
+    // === SENDEN ===
+    async function sendMessage() {
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = "";
+      appendMessage(publicKey.toString(), msg);
 
       try {
-        const mintPub = new PublicKey(SPITOUT_MINT);
-        const userATA = await getAssociatedTokenAddress(mintPub, userPubkey);
-        const treasuryATA = await getAssociatedTokenAddress(mintPub, TREASURY_WALLET);
-
-        const tx = new Transaction().add(
-          createTransferInstruction(userATA, treasuryATA, userPubkey, 1 * 10**DECIMALS)
-        );
-        tx.feePayer = userPubkey;
-        const { blockhash } = await connection.getLatestBlockhash();
-        tx.recentBlockhash = blockhash;
-
+        const mint = new PublicKey(SPITOUT_MINT);
+        const userATA = await getAssociatedTokenAddress(mint, publicKey);
+        const treasuryATA = await getAssociatedTokenAddress(mint, TREASURY_WALLET);
+        const tx = new Transaction().add(createTransferInstruction(userATA, treasuryATA, publicKey, 10**DECIMALS));
+        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+        tx.feePayer = publicKey;
         const signed = await provider.signTransaction(tx);
-        const sig = await connection.sendRawTransaction(signed.serialize());
-        await connection.confirmTransaction(sig, 'confirmed');
-
-        addComment(text);
-        commentInput.value = "";
-        showStatus("Post sent!");
-        setTimeout(updateBalance, 1000);
+        await connection.sendRawTransaction(signed.serialize());
+        statusDiv.textContent = "Sent! 1 $SPITOUT to treasury.";
+        setTimeout(updateBalance, 2000);
       } catch (e) {
-        alert("Error: " + (e.message || "Transaction failed"));
-      } finally {
-        sendBtn.disabled = false;
-        commentInput.disabled = false;
+        alert("Transfer failed: " + e.message);
       }
+    }
+
+    function appendMessage(wallet, text) {
+      const div = document.createElement("div");
+      div.className = "comment";
+      div.innerHTML = `<img class="avatar" src="https://i.imgur.com/T5g8V6R.png" />
+                       <div class="bubble">${text}</div>`;
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
     // === EVENTS ===
-    connectBtn.onclick = connectWallet;
-    sendBtn.onclick = () => {
-      const text = commentInput.value.trim();
-      if (text) postComment(text);
-    };
-    commentInput.addEventListener("keydown", e => {
-      if (e.key === "Enter" && !sendBtn.disabled) sendBtn.click();
-    });
+    walletButton.addEventListener("click", connectWallet);
+    sendButton.addEventListener("click", sendMessage);
+    input.addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
 
-    // === INIT ===
-    addComment("Welcome to $SPITOUT – the place where truth costs $1.");
-    addComment("No filters. No logs. No mercy.");
-
-  })();
+    // Start
+    appendMessage("System", "Welcome to $SPITOUT – truth costs 1 $SPITOUT.");
   </script>
 </body>
 </html>
