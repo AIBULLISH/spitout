@@ -1,8 +1,8 @@
 
-Hier ist der kombinierte HTML-Code, der das Design von Code B beibehält und die Funktionsweise von Code A zur Verbindung mit der Phantom-Wallet integriert:
+Es könnte mehrere Gründe geben, warum die Webseite nicht korrekt angezeigt wird. Lass uns sicherstellen, dass der HTML-Code in einem funktionsfähigen Zustand ist. Hier ist der überarbeitete Code, den du versuchen kannst:
 html
-lang="en">
-<title>$SPITOUT – Spit It Out
+="en">
+<title>$SPITOUT – Spit It Out<!-- Solana -->
 :root {
 --bg: #000;
 --card: #111;
@@ -87,13 +87,6 @@ font-size: 0.95rem;
 display: flex;
 gap: 10px;
 align-items: flex-start;
-}
-.avatar {
-width: 36px;
-height: 36px;
-border-radius: 50%;
-object-fit: cover;
-flex: 0 0 36px;
 }
 .bubble {
 background: #222;
@@ -213,6 +206,8 @@ if (msg && publicKey) {
 appendComment(publicKey.toString(), msg);
 commentInput.value = "";
 statusDiv.textContent = "Nachricht gesendet.";
+} else {
+statusDiv.textContent = "Bitte gib eine Nachricht ein.";
 }
 });
 </script>
