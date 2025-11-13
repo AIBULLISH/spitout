@@ -3,181 +3,172 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SPITOUT Chat</title>
+  <title>$SPITOUT Chat</title>
   <link rel="icon" type="image/png" href="logo.png" />
   <style>
     body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: radial-gradient(circle at top, #0a0a0a 0%, #000 100%);
-      color: #fff;
+      font-family: Arial, sans-serif;
+      background: #0d0d0d;
+      color: #eee;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
       min-height: 100vh;
-    }
-    img.logo {
-      width: 140px;
-      margin: 40px auto 10px;
-      display: block;
+      padding: 20px;
     }
     h1 {
-      font-size: 2rem;
-      color: #00ffc3;
-      margin-bottom: 20px;
-      text-shadow: 0 0 10px #00ffc3;
-    }
-    #wallet-button {
-      background: #00ffc3;
-      color: #000;
-      border: none;
-      padding: 12px 24px;
-      font-size: 1rem;
-      border-radius: 12px;
-      cursor: pointer;
-      margin-bottom: 20px;
-      transition: all 0.3s ease;
-    }
-    #wallet-button:hover {
-      background: #00e0b3;
-      transform: scale(1.05);
-    }
-    #chat-container {
-      width: 90%;
-      max-width: 600px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-      padding: 20px;
-      backdrop-filter: blur(8px);
-    }
-    #messages {
-      height: 300px;
-      overflow-y: auto;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      color: #ff3d3d;
       margin-bottom: 10px;
-      padding-bottom: 10px;
-    }
-    .message {
-      margin: 8px 0;
-      padding: 8px 10px;
-      background: rgba(0,255,195,0.1);
-      border-radius: 8px;
-      word-wrap: break-word;
-    }
-    .wallet {
-      font-size: 0.8rem;
-      opacity: 0.7;
-    }
-    #input-area {
-      display: flex;
-      gap: 10px;
-    }
-    #input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-    }
-    #send-button {
-      background: #00ffc3;
-      color: #000;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    #send-button:hover {
-      background: #00e0b3;
     }
     #status {
-      margin-top: 8px;
-      font-size: 0.9rem;
-      color: #aaa;
-      text-align: center;
+      margin-bottom: 15px;
+    }
+    #chatbox {
+      width: 100%;
+      max-width: 500px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 0 15px rgba(255,60,60,0.4);
+    }
+    #comments {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+    .comment {
+      background: #222;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .comment img {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+    }
+    #commentInput {
+      width: 75%;
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      background: #333;
+      color: #eee;
+    }
+    #sendBtn, #connectBtn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      background: #ff3d3d;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    #sendBtn:disabled {
+      background: #444;
+      cursor: not-allowed;
+    }
+    #sendBtn:hover:not(:disabled),
+    #connectBtn:hover {
+      background: #ff5c5c;
     }
   </style>
 </head>
 <body>
-  <img src="logo.png" alt="Logo" class="logo" />
-  <h1>SPITOUT Chat</h1>
+  <img src="logo.png" alt="Logo" style="width:120px;margin-bottom:10px;">
+  <h1>$SPITOUT Chat</h1>
+  <p id="status">Connect your wallet to start venting.</p>
+  <button id="connectBtn">Connect Wallet</button>
 
-  <button id="wallet-button">Connect Wallet</button>
-
-  <div id="chat-container">
-    <div id="messages"></div>
-    <div id="input-area">
-      <input id="input" type="text" placeholder="Type your message..." disabled />
-      <button id="send-button" disabled>Send</button>
+  <div id="chatbox">
+    <div id="comments"></div>
+    <div style="display:flex;gap:6px;">
+      <input id="commentInput" placeholder="Spit it out..." disabled />
+      <button id="sendBtn" disabled>Send</button>
     </div>
   </div>
-  <div id="status">Connect your wallet to start chatting.</div>
 
-  <!-- Solana Wallet Adapter -->
+  <!-- Solana wallet adapter -->
   <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.js"></script>
   <script src="https://unpkg.com/@solana/wallet-adapter-wallets@latest/lib/index.iife.js"></script>
+
   <script>
-    const { Connection, PublicKey, SystemProgram, Transaction } = solanaWeb3;
-    const treasuryWallet = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-
-    // 👉 Hier später deine SPITOUT Token-Adresse einfügen
-    const SPITOUT_TOKEN_MINT = ""; // z. B. new PublicKey("XXXXXXXXXXXX")
-
-    let provider = null;
-    let publicKey = null;
+    const { Connection, PublicKey, Transaction } = solanaWeb3;
     const connection = new Connection("https://api.mainnet-beta.solana.com");
 
-    const walletButton = document.getElementById("wallet-button");
-    const input = document.getElementById("input");
-    const sendButton = document.getElementById("send-button");
-    const messagesDiv = document.getElementById("messages");
-    const statusDiv = document.getElementById("status");
+    const TREASURY_WALLET = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
+    const SPITOUT_MINT = ""; // später ersetzen
+    const POST_COST_USD = 1;
+    const decimals = 9;
+
+    let userPubkey = null;
+    let provider = null;
 
     async function connectWallet() {
-      if (window.solana && window.solana.isPhantom) {
-        provider = window.solana;
-        await provider.connect();
-        publicKey = provider.publicKey;
-      } else if (window.solflare) {
+      if (window.phantom?.solana?.isPhantom) {
+        provider = window.phantom.solana;
+      } else if (window.solflare?.isSolflare) {
         provider = window.solflare;
-        await provider.connect();
-        publicKey = provider.publicKey;
+      } else if (window.backpack?.solana) {
+        provider = window.backpack.solana;
       } else {
-        alert("No Solana wallet found! Install Phantom or Solflare.");
+        alert("No supported Solana wallet found! Install Phantom, Solflare, or Backpack.");
         return;
       }
-      walletButton.textContent = "Connected: " + publicKey.toString().slice(0,4) + "..." + publicKey.toString().slice(-4);
-      input.disabled = false;
-      sendButton.disabled = false;
-      statusDiv.textContent = "You can now chat. Each post sends 1 USD in SPITOUT.";
+
+      try {
+        const resp = await provider.connect();
+        userPubkey = resp.publicKey || provider.publicKey;
+        document.getElementById("status").innerText =
+          "Wallet connected: " + userPubkey.toBase58();
+        document.getElementById("commentInput").disabled = false;
+        document.getElementById("sendBtn").disabled = false;
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    async function sendMessage() {
-      const msg = input.value.trim();
-      if (!msg) return;
-      input.value = "";
-      appendMessage(publicKey.toString(), msg);
-
-      // ⚡ 1 USD in SPITOUT soll gesendet werden – hier als Pseudo-Transfer (da Mint leer)
-      // Wenn du später deine Token-Adresse einfügst, baue hier die SPL-Token Transfer Logik ein.
-      statusDiv.textContent = "Sent 1 USD worth of SPITOUT to Treasury Wallet.";
+    function getRandomAvatar() {
+      const memes = [
+        "https://i.imgur.com/Pepe1.png",
+        "https://i.imgur.com/Pepe2.png",
+        "https://i.imgur.com/Pepe3.png",
+        "https://i.imgur.com/Pepe4.png"
+      ];
+      return memes[Math.floor(Math.random() * memes.length)];
     }
 
-    function appendMessage(wallet, text) {
-      const div = document.createElement("div");
-      div.className = "message";
-      div.innerHTML = `<div class="wallet">${wallet.slice(0,4)}...${wallet.slice(-4)}</div>${text}`;
-      messagesDiv.appendChild(div);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    let comments = [];
+    function renderComments() {
+      const div = document.getElementById("comments");
+      div.innerHTML = "";
+      comments.slice().reverse().forEach(c => {
+        const el = document.createElement("div");
+        el.className = "comment";
+        el.innerHTML = `<img src="${c.avatar}" /> ${c.text}`;
+        div.appendChild(el);
+      });
     }
 
-    walletButton.addEventListener("click", connectWallet);
-    sendButton.addEventListener("click", sendMessage);
-  </script>
-</body>
-</html>
+    async function postComment(text) {
+      comments.push({ id: Date.now(), avatar: getRandomAvatar(), text });
+      renderComments();
+
+      // hier später SPL Token Transfer einbauen
+      console.log(`Would send ${POST_COST_USD} USD in SPITOUT to treasury.`);
+    }
+
+    document.getElementById("connectBtn").addEventListener("click", connectWallet);
+    document.getElementById("sendBtn").addEventListener("click", () => {
+      const text = document.getElementById("commentInput").value.trim();
+      if (text) {
+        postComment(text);
+        document.getElementById("commentInput").value = "";
+      }
+    });
+    document.g
