@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>$SPITOUT – Spit It Out</title>
+  <title>$SPITOUT – Wallet-Gated Chat (Client-only)</title>
 
   <!-- Solana Web3 & SPL Token (IIFE builds) -->
   <script src="https://unpkg.com/@solana/web3.js@1.91.4/lib/index.iife.min.js"></script>
@@ -11,41 +11,128 @@
 
   <style>
     :root{
-      --bg:#000; --card:#111; --accent1:#ff007f; --accent2:#00bfff; --text:#fff; --muted:#ccc;
+      --bg:#0b0b0c;
+      --card:#121214;
+      --accent1:#ff3d6f;
+      --accent2:#ff0066;
+      --muted:#bdbdbd;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter, Arial, sans-serif;background:radial-gradient(circle at 30% 10%, #091016 0%, #000 60%);color:var(--text);display:flex;align-items:center;justify-content:flex-start;min-height:100vh;padding:28px;}
-    .wrap{width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:12px}
-    img#logo{width:160px;filter:drop-shadow(0 8px 24px rgba(255,0,120,0.14));margin-top:22px}
-    h1{margin:0;color:var(--accent1);font-size:2rem;letter-spacing:0.6px}
-    #status{color:var(--muted);font-size:0.95rem}
-    .controls{display:flex;gap:10px;align-items:center;margin-top:6px}
-    button{padding:8px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white;cursor:pointer;font-weight:700}
-    button:disabled{opacity:0.45;cursor:not-allowed}
-    .card{width:94%;max-width:560px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:14px;border:1px solid rgba(255,60,80,0.04);box-shadow:0 8px 30px rgba(0,0,0,0.6);margin-top:12px}
-    #comments{max-height:420px;overflow:auto;display:flex;flex-direction:column;gap:12px;padding-right:8px}
-    .comment{display:flex;gap:10px;align-items:flex-start}
-    .avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:0 0 40px}
-    .bubble{background:#111;padding:11px 14px;border-radius:12px;color:#eee;max-width:84%;word-wrap:break-word;line-height:1.35}
-    #composer{display:flex;gap:10px;margin-top:12px}
-    #commentInput{flex:1;padding:12px 14px;border-radius:999px;border:none;background:#0b0b0b;color:#fff;outline:none}
-    #sendBtn{padding:12px 18px;border-radius:999px;border:none;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#fff;font-weight:700;cursor:pointer}
-    .small{font-size:0.85rem;color:var(--muted)}
-    .rules{margin-top:10px;font-size:0.9rem;color:#ff6f6f;font-weight:700}
+    body{
+      margin:0;
+      font-family:Inter, Arial, sans-serif;
+      background: radial-gradient(circle at 30% 10%, #091016 0%, #000 60%);
+      color:#eee;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+      padding:24px;
+    }
+    .wrap{
+      width:100%;
+      max-width:720px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+    }
+    img#logo{ width:140px; filter: drop-shadow(0 6px 18px rgba(255,0,100,0.18)); }
+    h1{ margin:0; color:var(--accent1); letter-spacing:0.6px; }
+    #status{ color:var(--muted); margin-top:6px; }
+
+    .controls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:6px;
+    }
+    button{
+      background:linear-gradient(90deg,var(--accent1),var(--accent2));
+      border:none;
+      color:white;
+      padding:8px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:disabled{ opacity:0.45; cursor:not-allowed; transform:none; }
+
+    /* Chat card */
+    .card{
+      width:100%;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,60,80,0.06);
+      border-radius:14px;
+      padding:14px;
+      box-shadow:0 8px 30px rgba(0,0,0,0.6);
+    }
+    #comments{
+      max-height:420px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding-right:6px;
+    }
+    .comment{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      max-width:100%;
+    }
+    .avatar{
+      width:36px;height:36px;border-radius:50%;flex:0 0 36px;object-fit:cover;
+    }
+    .bubble{
+      background:#111;
+      padding:10px 12px;
+      border-radius:10px;
+      color:#eee;
+      box-shadow: inset 0 -1px 0 rgba(255,255,255,0.02);
+      font-size:14px;
+    }
+    #composer{
+      display:flex;
+      gap:8px;
+      margin-top:12px;
+      align-items:center;
+    }
+    #commentInput{
+      flex:1;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.03);
+      background:#080808;
+      color:#eee;
+      outline:none;
+    }
+    .small{ font-size:13px; color:var(--muted); }
+
+    /* post animation overlay */
+    .post-anim{
+      position:fixed;
+      left:0;top:0;right:0;bottom:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none;
+      z-index:9999;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <img id="logo" src="logo.png" alt="$SPITOUT Logo" />
-    <h1>$SPITOUT</h1>
-    <div id="status">Connect wallet to spit it out.</div>
+    <h1>$SPITOUT Chat</h1>
+    <div id="status">Verbinde deine Phantom Wallet, um loszulegen.</div>
 
     <div class="controls">
-      <button id="connectBtn">Connect Wallet</button>
+      <button id="connectBtn">Connect Wallet (Phantom)</button>
       <div class="small" id="balanceInfo">Balance: —</div>
     </div>
 
-    <div class="card">
+    <div class="card" style="margin-top:10px;">
       <div id="comments"></div>
 
       <div id="composer">
@@ -53,253 +140,239 @@
         <button id="sendBtn" disabled>Send</button>
       </div>
 
-      <div class="rules">1 Post = 1 $SPITOUT | Min. 30 $SPITOUT to post</div>
+      <div style="margin-top:8px;">
+        <span class="small">Regel: Wallet muss mindestens <strong>$30</strong> in $SPITOUT haben. Jeder Post kostet <strong>$1</strong> (in $SPITOUT).</span>
+      </div>
     </div>
   </div>
 
-<script>
-(async ()=>{
+  <script>
+  (async ()=>{
 
-  // ====== CONFIG - replace mint when ready ======
-  const TREASURY_WALLET = new solanaWeb3.PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-  const SPITOUT_MINT = "REPLACE_WITH_YOUR_MINT_ADDRESS"; // <-- replace later
-  const POST_COST_TOKENS = 1;    // 1 token per post
-  const MIN_BALANCE_TOKENS = 30; // must hold >= 30 tokens to post
-  const DECIMALS = 9;           // token decimals (adjust if needed)
-  // =============================================
+    // Globals und Konfiguration (einfach anpassen)
+    const TREASURY_WALLET = new solanaWeb3.PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
+    const SPITOUT_MINT = "REPLACE_WITH_YOUR_MINT_ADDRESS"; // <- später ersetzen
+    const POST_COST_USD = 1;
+    const MIN_BALANCE_USD = 30;
+    const COIN_PRICE_USD = 0.10; // Fester Kurs (ändern wenn nötig) — 1 SPITOUT = 0.10 USD
+    const DECIMALS = 9; // Token decimals (anpassen falls anders)
 
-  const { Connection, Transaction, PublicKey } = solanaWeb3;
-  const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
-  const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+    // Solana / SPL Token helpers (IIFE exports)
+    const { Connection, Transaction, PublicKey } = solanaWeb3;
+    const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
 
-  // UI refs
-  const connectBtn = document.getElementById("connectBtn");
-  const statusEl = document.getElementById("status");
-  const balanceInfo = document.getElementById("balanceInfo");
-  const commentInput = document.getElementById("commentInput");
-  const sendBtn = document.getElementById("sendBtn");
-  const commentsDiv = document.getElementById("comments");
+    const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-  // avatars
-  const AVATARS = [
-    "https://i.imgur.com/Pepe1.png",
-    "https://i.imgur.com/Pepe2.png",
-    "https://i.imgur.com/Pepe3.png",
-    "https://i.imgur.com/Pepe4.png",
-    "https://i.imgur.com/T5g8V6R.png"
-  ];
+    // UI references
+    const connectBtn = document.getElementById("connectBtn");
+    const statusEl = document.getElementById("status");
+    const balanceInfo = document.getElementById("balanceInfo");
+    const commentInput = document.getElementById("commentInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const commentsDiv = document.getElementById("comments");
 
-  // state
-  let adapterWallet = null; // wallet adapter (if using wallet standard)
-  let phantomWallet = null; // phantom (window.solana) if available and used
-  let userPubkey = null;
-  let usingPhantom = false;
+    // In-Memory comments array (wird NICHT persistent gespeichert)
+    let comments = [];
+    let userPubkey = null;
 
-  // helper: add comment to UI (no persistence)
-  function addComment(text){
-    const avatar = AVATARS[Math.floor(Math.random()*AVATARS.length)];
-    const container = document.createElement("div");
-    container.className = "comment";
-    container.innerHTML = `<img class="avatar" src="${avatar}" alt="avatar"><div class="bubble">${escapeHtml(text)}</div>`;
-    commentsDiv.appendChild(container);
-    commentsDiv.scrollTop = commentsDiv.scrollHeight;
-  }
+    // Avatare (zufällig)
+    const AVATARS = [
+      "https://i.imgur.com/Pepe1.png",
+      "https://i.imgur.com/Pepe2.png",
+      "https://i.imgur.com/Pepe3.png",
+      "https://i.imgur.com/Pepe4.png",
+      "https://i.imgur.com/T5g8V6R.png"
+    ];
 
-  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  function setStatus(t){ statusEl.innerText = t; }
+    // Hilfsfunktionen
+    function addCommentToUI(text){
+      const avatar = AVATARS[Math.floor(Math.random()*AVATARS.length)];
+      const wrap = document.createElement("div");
+      wrap.className = "comment";
+      wrap.innerHTML = `<img class="avatar" src="${avatar}" alt="avatar" />
+                        <div class="bubble">${escapeHtml(text)}</div>`;
+      // Append newest at bottom (chronologisch)
+      commentsDiv.appendChild(wrap);
+      commentsDiv.scrollTop = commentsDiv.scrollHeight;
+    }
 
-  // detect available wallets (Wallet Standard)
-  function detectWalletAdapters(){
-    const wallets = (window.solana?.wallets || []).filter(w => w.features?.['standard:connect']);
-    return wallets || [];
-  }
+    function escapeHtml(s){
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
 
-  // connect logic: prefer Phantom (if user clicks and Phantom exists), else use wallet adapter
-  async function connectWallet(){
-    // If Phantom available and user likely wants Phantom, use it
-    if(window.solana && window.solana.isPhantom){
+    function showStatus(txt){ statusEl.innerText = txt; }
+
+    // Wallet connect
+    async function connectWallet(){
+      if (!window.solana || !window.solana.isPhantom) {
+        alert("Phantom Wallet nicht gefunden. Installiere Phantom und versuche es erneut.");
+        return;
+      }
       try {
         const resp = await window.solana.connect();
-        phantomWallet = window.solana;
-        adapterWallet = null;
-        usingPhantom = true;
-        userPubkey = resp.publicKey ? resp.publicKey : (resp?.publicKey ? resp.publicKey : null);
-        if(!userPubkey && resp?.publicKey?.toString) userPubkey = new PublicKey(resp.publicKey.toString());
-        if(!userPubkey && window.solana?.publicKey) userPubkey = window.solana.publicKey;
-        setStatus("Connected: Phantom");
-        connectBtn.innerText = "Connected (Phantom)";
-        await updateBalance();
+        userPubkey = resp.publicKey;
+        showStatus("Verbunden: " + userPubkey.toBase58());
+        await updateBalanceAndUI();
+      } catch(e){
+        console.error("connect error", e);
+        showStatus("Verbindung abgebrochen.");
+      }
+    }
+
+    // Balance check (Token-ATA)
+    async function updateBalanceAndUI(){
+      if(!userPubkey){
+        showStatus("Keine Wallet verbunden.");
         return;
-      } catch(e){
-        console.warn("Phantom connect failed or cancelled", e);
       }
-    }
-
-    // else wallet standard adapters
-    const wallets = detectWalletAdapters();
-    if(wallets.length === 0){
-      alert("No wallet detected. Install Phantom, Backpack or Solflare.");
-      setStatus("No wallet found. Install Phantom/Backpack/Solflare.");
-      return;
-    }
-
-    // if multiple adapters, ask user to type name (simple)
-    let chosen = wallets[0];
-    if(wallets.length > 1){
-      const names = wallets.map(w=>w.name).join(", ");
-      const name = prompt("Multiple wallets found: " + names + "\nType the wallet name to use:");
-      if(name){
-        chosen = wallets.find(w => w.name.toLowerCase().includes(name.toLowerCase())) || wallets[0];
-      }
-    }
-
-    // use chosen adapter
-    try {
-      // connect() is wallet-standard connect
-      await chosen.connect();
-      adapterWallet = chosen;
-      phantomWallet = null;
-      usingPhantom = false;
-      // wallet-standard exposes accounts array with "address"
-      userPubkey = new PublicKey(chosen.accounts?.[0]?.address || chosen.publicKey?.toString());
-      setStatus("Connected: " + (chosen.name || "Wallet"));
-      connectBtn.innerText = "Connected (" + (chosen.name||"Wallet") + ")";
-      await updateBalance();
-    } catch(e){
-      console.error("Adapter connect fail", e);
-      setStatus("Connection failed.");
-    }
-  }
-
-  // update balance UI and enable/disable composer:
-  async function updateBalance(){
-    balanceInfo.innerText = "Balance: —";
-    if(!userPubkey){
-      setStatus("Connect wallet to spit it out.");
-      commentInput.disabled = sendBtn.disabled = true;
-      return;
-    }
-    if(!SPITOUT_MINT || SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS"){
-      setStatus("Mint not set. Replace SPITOUT_MINT in the file.");
-      balanceInfo.innerText = "Mint missing";
-      commentInput.disabled = sendBtn.disabled = true;
-      return;
-    }
-    try {
-      const mintPub = new PublicKey(SPITOUT_MINT);
-      const ata = await getAssociatedTokenAddress(mintPub, userPubkey);
-      let tokenAmount = 0;
-      try {
-        const bal = await connection.getTokenAccountBalance(ata);
-        tokenAmount = Number(bal.value.amount) / (10 ** DECIMALS);
-      } catch(e){
-        tokenAmount = 0;
-      }
-      balanceInfo.innerText = `Balance: ${tokenAmount.toLocaleString(undefined,{maximumFractionDigits:6})} $SPITOUT`;
-      if(tokenAmount >= MIN_BALANCE_TOKENS){
-        commentInput.disabled = false;
-        sendBtn.disabled = false;
-        setStatus(`Ready — you can post (have ${tokenAmount.toFixed(3)} tokens)`);
-      } else {
+      if(!SPITOUT_MINT || SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS"){
+        // Wenn Mint noch nicht gesetzt: informiere, aber wir zeigen die Phantom-Adresse
+        balanceInfo.innerText = "Mint noch nicht gesetzt. Setze SPITOUT_MINT.";
+        showStatus("Wallet verbunden: " + userPubkey.toBase58() + " — Mint fehlt.");
         commentInput.disabled = true;
         sendBtn.disabled = true;
-        setStatus(`Need at least ${MIN_BALANCE_TOKENS} $SPITOUT to post (you have ${tokenAmount.toFixed(3)})`);
+        return;
       }
-    } catch(e){
-      console.error("balance error", e);
-      setStatus("Error loading balance.");
-      commentInput.disabled = sendBtn.disabled = true;
+      try {
+        const mintPub = new PublicKey(SPITOUT_MINT);
+        const ata = await getAssociatedTokenAddress(mintPub, userPubkey);
+        let tokenBalance = 0;
+        try {
+          const acc = await connection.getTokenAccountBalance(ata);
+          tokenBalance = Number(acc.value.amount); // amount in base units
+        } catch(e){
+          tokenBalance = 0;
+        }
+        const tokenFloat = tokenBalance / (10 ** DECIMALS);
+        const balanceUSD = tokenFloat * COIN_PRICE_USD;
+        balanceInfo.innerText = `Balance: ${tokenFloat.toLocaleString(undefined,{maximumFractionDigits:6})} $SPITOUT ≈ $${balanceUSD.toFixed(2)}`;
+
+        if(balanceUSD >= MIN_BALANCE_USD){
+          commentInput.disabled = false;
+          sendBtn.disabled = false;
+          showStatus(`Du kannst posten! (Balance ≈ $${balanceUSD.toFixed(2)})`);
+        } else {
+          commentInput.disabled = true;
+          sendBtn.disabled = true;
+          showStatus(`Du brauchst mindestens $${MIN_BALANCE_USD} in $SPITOUT (Du hast ≈ $${balanceUSD.toFixed(2)})`);
+        }
+      } catch(err){
+        console.error(err);
+        showStatus("Fehler beim Abrufen des Token-Balances.");
+      }
     }
-  }
 
-  // build + send transfer tx
-  async function postComment(text){
-    if(!userPubkey) { alert("Connect wallet first."); return; }
-    if(!SPITOUT_MINT || SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS"){
-      alert("Mint not set — replace SPITOUT_MINT in file.");
-      return;
-    }
-
-    const mintPub = new PublicKey(SPITOUT_MINT);
-    const userATA = await getAssociatedTokenAddress(mintPub, userPubkey);
-    const treasuryATA = await getAssociatedTokenAddress(mintPub, TREASURY_WALLET);
-    const amountBase = BigInt(POST_COST_TOKENS) * (BigInt(10) ** BigInt(DECIMALS));
-
-    try {
-      const tx = new Transaction().add(
-        createTransferInstruction(userATA, treasuryATA, userPubkey, amountBase)
-      );
-      tx.feePayer = userPubkey;
-      const { blockhash } = await connection.getLatestBlockhash();
-      tx.recentBlockhash = blockhash;
-
-      let signed;
-      if(usingPhantom && phantomWallet && phantomWallet.signTransaction){
-        // Phantom
-        signed = await phantomWallet.signTransaction(tx);
-      } else if(adapterWallet && adapterWallet.signTransaction){
-        // wallet standard adapter
-        signed = await adapterWallet.signTransaction(tx);
-      } else {
-        alert("No wallet capable of signing transaction available.");
+    // Post-Flow: Transfer + UI-Update
+    async function postComment(text){
+      if(!userPubkey){
+        alert("Bitte zuerst Wallet verbinden.");
+        return;
+      }
+      if(!SPITOUT_MINT || SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS"){
+        alert("Mint-Adresse ist noch nicht gesetzt. Du musst zuerst SPITOUT_MINT in der Datei ersetzen.");
         return;
       }
 
-      const sig = await connection.sendRawTransaction(signed.serialize());
-      // we wait for confirmation (short)
-      await connection.confirmTransaction(sig, 'confirmed');
+      // Berechne Betrag in Token-Basis-Einheiten
+      const tokensNeeded = Math.ceil((POST_COST_USD / COIN_PRICE_USD) * (10 ** DECIMALS));
+      try {
+        const mintPub = new PublicKey(SPITOUT_MINT);
+        const userATA = await getAssociatedTokenAddress(mintPub, userPubkey);
+        const treasuryATA = await getAssociatedTokenAddress(mintPub, TREASURY_WALLET);
 
-      // on success: show comment in UI (no persistence)
-      addComment(text);
-      setStatus("Post sent (tx: " + sig.slice(0,8) + "...)");
-      // refresh balance
-      setTimeout(updateBalance, 800);
+        // Baue TX
+        const tx = new Transaction().add(
+          createTransferInstruction(userATA, treasuryATA, userPubkey, tokensNeeded)
+        );
+        tx.feePayer = userPubkey;
+        const { blockhash } = await connection.getLatestBlockhash();
+        tx.recentBlockhash = blockhash;
 
-    } catch(err){
-      console.error("post error", err);
-      // user-friendly messages
-      const emsg = String(err || "");
-      if(emsg.toLowerCase().includes("account not found") || emsg.toLowerCase().includes("failed to get token account balance")){
-        alert("Token account missing or empty. Make sure your wallet has a $SPITOUT ATA with tokens.");
-      } else if(emsg.toLowerCase().includes("insufficient funds")) {
-        alert("Insufficient token balance or SOL for fees.");
-      } else {
-        alert("Transaction failed: " + (err.message || err));
+        // Phantom signieren lassen
+        const signed = await window.solana.signTransaction(tx);
+        // Senden
+        const sig = await connection.sendRawTransaction(signed.serialize());
+        // Hinweis: confirm kann einige Sekunden dauern
+        await connection.confirmTransaction(sig, 'confirmed');
+
+        // UI: Kommentar anzeigen (keine Persistenz)
+        addCommentToUI(text);
+
+        // kurz Animation
+        animatePost();
+        // refresh balance
+        await updateBalanceAndUI();
+
+      } catch(e){
+        console.error("post error", e);
+        if(String(e).toLowerCase().includes("account not found") || String(e).toLowerCase().includes("failed to get token account balance")){
+          alert("Token-ATA für deinen Account existiert nicht oder ist leer. Stelle sicher, dass du $SPITOUT Token in einem Associated Token Account hast.");
+        } else {
+          alert("Fehler beim Posten: " + (e.message || e));
+        }
       }
     }
-  }
 
-  // events
-  connectBtn.addEventListener("click", connectWallet);
-  sendBtn.addEventListener("click", async ()=>{
-    const txt = commentInput.value.trim();
-    if(!txt) return;
-    sendBtn.disabled = true;
-    commentInput.disabled = true;
-    try {
-      await postComment(txt);
-      commentInput.value = "";
-    } finally {
-      // short delay then re-check balance & re-enable if allowed
-      setTimeout(async ()=>{
-        await updateBalance();
-      }, 1000);
+    // Animation beim Posten
+    function animatePost(){
+      const overlay = document.createElement("div");
+      overlay.className = "post-anim";
+      overlay.innerHTML = `<img src="https://i.imgur.com/T5g8V6R.gif" style="width:140px;opacity:0.95;filter:drop-shadow(0 8px 20px rgba(255,0,120,0.25))"/>`;
+      document.body.appendChild(overlay);
+      setTimeout(()=>overlay.remove(),700);
     }
-  });
 
-  commentInput.addEventListener("keydown", (e)=>{ if(e.key === "Enter" && !sendBtn.disabled) sendBtn.click(); });
+    // Events
+    connectBtn.addEventListener("click", connectWallet);
 
-  // initial sample comments
-  addComment("Welcome to $SPITOUT — truth costs 1 token.");
-  addComment("Client-only — posts vanish on reload (no backend).");
+    sendBtn.addEventListener("click", async ()=>{
+      const text = commentInput.value.trim();
+      if(!text) return;
+      sendBtn.disabled = true;
+      commentInput.disabled = true;
+      try {
+        await postComment(text);
+        commentInput.value = "";
+      } finally {
+        // kurz warten und UI ggf. neu prüfen
+        setTimeout(async ()=>{
+          await updateBalanceAndUI();
+          sendBtn.disabled = commentInput.disabled = !(await canPostSync());
+        }, 700);
+      }
+    });
 
-  // if phantom auto-connected earlier, reflect
-  if(window.solana && window.solana.isPhantom){
-    window.solana.on && window.solana.on("connect", ()=>{ setStatus("Phantom connected"); });
-    window.solana.on && window.solana.on("disconnect", ()=>{ setStatus("Wallet disconnected"); userPubkey = null; commentInput.disabled = sendBtn.disabled = true; balanceInfo.innerText = "Balance: —"; });
-  }
+    commentInput.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter" && !sendBtn.disabled){
+        sendBtn.click();
+      }
+    });
 
-})();
-</script>
+    // Helper: synchronous check for enabling composer (best-effort)
+    async function canPostSync(){
+      if(!userPubkey) return false;
+      if(!SPITOUT_MINT || SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS") return false;
+      try {
+        const mintPub = new PublicKey(SPITOUT_MINT);
+        const ata = await getAssociatedTokenAddress(mintPub, userPubkey);
+        const acc = await connection.getTokenAccountBalance(ata);
+        const tokenBalance = Number(acc.value.amount) / (10**DECIMALS);
+        return (tokenBalance * COIN_PRICE_USD) >= MIN_BALANCE_USD;
+      } catch(e){ return false; }
+    }
+
+    // Init: keine persistente Kommentare (wollen wir so)
+    // Füge ein Beispiel/Willkommensnachricht hinzu (optional)
+    addCommentToUI("Welcome to $SPITOUT — connect Phantom to enable wallet-gated posting.");
+    addCommentToUI("No backend — every comment is client-only and will vanish on reload (exactly as requested).");
+
+    // Falls Wallet bereits verbunden (Phantom auto-connect)
+    if(window.solana && window.solana.isPhantom){
+      window.solana.on("connect", ()=>{ /* handled by connectBtn logic */ });
+      window.solana.on("disconnect", ()=>{ userPubkey = null; showStatus("Wallet disconnected."); balanceInfo.innerText = "Balance: —"; commentInput.disabled = true; sendBtn.disabled = true; });
+    }
+
+  })();
+  </script>
 </body>
 </html>
