@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>$SPITOUT – Spit It Out</title>
   
-  <!-- Solana Dependencies (Simplified and Corrected) -->
-  <!-- These must be loaded before the main script -->
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-  <script src="https://unpkg.com/@solana/spl-token@0.3.11/lib/index.iife.min.js"></script>
+  <!-- Solana Dependencies - Using the most robust combination -->
+  <!-- We use the simple web3.js and spl-token.js from Code B, but ensure they are loaded correctly -->
+  <script defer src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+  <script defer src="https://unpkg.com/@solana/spl-token@0.3.11/lib/index.iife.min.js"></script>
   
+  <!-- CSS from Code B -->
   <style>
     :root {
       --bg: #000;
@@ -224,192 +225,192 @@
     </ul>
   </div>
   <script>
-  // The script is now at the end of the body, which is the standard best practice
-  // to ensure all elements and external scripts are loaded.
-  
-  // The async IIFE is used to run the main logic
-  (async () => {
+  // The script is now in the head, but the main logic is wrapped in DOMContentLoaded
+  // to ensure all elements and the DEFERRED external scripts are ready.
+  document.addEventListener('DOMContentLoaded', () => {
+    
     // Check if the necessary global objects are available
-    // This check is now more likely to pass as the script is at the end of <body>
     if (typeof solanaWeb3 === 'undefined' || typeof splToken === 'undefined') {
         console.error("Solana libraries not loaded correctly. Check script tags.");
         document.getElementById("status").innerText = "Error: Solana libraries not loaded. Please check your internet connection or try again.";
         return;
     }
 
-    // CONFIG
-    const TREASURY_WALLET = new solanaWeb3.PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    const SPITOUT_MINT = "REPLACE_WITH_YOUR_MINT_ADDRESS"; // AFTER LAUNCH
-    const COIN_PRICE_USD = 1.0;
-    const POST_COST_USD = 1;
-    const MIN_BALANCE_USD = 30;
-    const DECIMALS = 9;
-    
-    // Destructure from global objects provided by the imported scripts
-    const { Connection, Transaction, PublicKey } = solanaWeb3;
-    const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
-    
-    const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
-    const connectBtn = document.getElementById("connectBtn");
-    const statusEl = document.getElementById("status");
-    const balanceInfo = document.getElementById("balanceInfo");
-    const commentInput = document.getElementById("commentInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const commentsDiv = document.getElementById("comments");
-    let userPubkey = null;
-    let wallet = null; // This will hold the wallet provider (e.g., window.solana)
-    const AVATARS = [
-      "https://i.imgur.com/Pepe1.png",
-      "https://i.imgur.com/Pepe2.png",
-      "https://i.imgur.com/Pepe3.png",
-      "https://i.imgur.com/Pepe4.png",
-      "https://i.imgur.com/T5g8V6R.png"
-    ];
-    function addComment(text) {
-      const avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
-      const div = document.createElement("div");
-      div.className = "comment";
-      div.innerHTML = `<img class="avatar" src="${avatar}" alt="" />
-                       <div class="bubble">${escapeHtml(text)}</div>`;
-      commentsDiv.appendChild(div);
-      commentsDiv.scrollTop = commentsDiv.scrollHeight;
-    }
-    function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-    function showStatus(txt) { statusEl.innerText = txt; }
-
-    // --- WALLET CONNECT LOGIC (ADAPTED FROM CODE A, with better check) ---
-    async function connectWallet() {
-      // Check for wallet availability first
-      if (typeof window.solana === 'undefined' && typeof window.solflare === 'undefined') {
-          alert("No Solana wallet found! Install Phantom or Solflare.");
-          return;
+    (async () => {
+      // CONFIG
+      const TREASURY_WALLET = new solanaWeb3.PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
+      const SPITOUT_MINT = "REPLACE_WITH_YOUR_MINT_ADDRESS"; // AFTER LAUNCH
+      const COIN_PRICE_USD = 1.0;
+      const POST_COST_USD = 1;
+      const MIN_BALANCE_USD = 30;
+      const DECIMALS = 9;
+      
+      // Destructure from global objects provided by the imported scripts
+      const { Connection, Transaction, PublicKey } = solanaWeb3;
+      const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
+      
+      const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+      const connectBtn = document.getElementById("connectBtn");
+      const statusEl = document.getElementById("status");
+      const balanceInfo = document.getElementById("balanceInfo");
+      const commentInput = document.getElementById("commentInput");
+      const sendBtn = document.getElementById("sendBtn");
+      const commentsDiv = document.getElementById("comments");
+      let userPubkey = null;
+      let wallet = null; // This will hold the wallet provider (e.g., window.solana)
+      const AVATARS = [
+        "https://i.imgur.com/Pepe1.png",
+        "https://i.imgur.com/Pepe2.png",
+        "https://i.imgur.com/Pepe3.png",
+        "https://i.imgur.com/Pepe4.png",
+        "https://i.imgur.com/T5g8V6R.png"
+      ];
+      function addComment(text) {
+        const avatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
+        const div = document.createElement("div");
+        div.className = "comment";
+        div.innerHTML = `<img class="avatar" src="${avatar}" alt="" />
+                         <div class="bubble">${escapeHtml(text)}</div>`;
+        commentsDiv.appendChild(div);
+        commentsDiv.scrollTop = commentsDiv.scrollHeight;
       }
-
-      if (window.solana && window.solana.isPhantom) {
-        wallet = window.solana;
-      } else if (window.solflare) {
-        wallet = window.solflare;
-      } else {
-          alert("No Solana wallet found! Install Phantom or Solflare.");
-          return;
+      function escapeHtml(s) {
+        return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       }
+      function showStatus(txt) { statusEl.innerText = txt; }
 
-      try {
-        // The 'connect' call is what triggers the wallet pop-up and establishes the connection
-        await wallet.connect();
-        userPubkey = wallet.publicKey; // PublicKey object from provider
-        connectBtn.innerText = `Connected: ${userPubkey.toString().slice(0,4)}...${userPubkey.toString().slice(-4)}`;
-        showStatus(`Connected: ${wallet.name || 'Wallet'}`);
-        await updateBalance();
-      } catch (e) {
-        // This catches errors like 'User rejected the request' or 'Could not establish connection'
-        showStatus("Connection failed. Check your wallet extension.");
-        console.error("Wallet connection error:", e);
-      }
-    }
-    // --- END WALLET CONNECT LOGIC ---
-
-    // BALANCE (FROM CODE B)
-    async function updateBalance() {
-      if (!userPubkey) return;
-      if (SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS") {
-        showStatus("Token not launched yet. Mint address pending.");
-        balanceInfo.innerText = "Launch pending...";
-        commentInput.disabled = sendBtn.disabled = true;
-        return;
-      }
-      try {
-        const mintPub = new PublicKey(SPITOUT_MINT);
-        const ata = await getAssociatedTokenAddress(mintPub, userPubkey);
-        let balance = 0;
-        try {
-          const acc = await connection.getTokenAccountBalance(ata);
-          balance = Number(acc.value.amount) / (10 ** DECIMALS);
-        } catch (e) { balance = 0; }
-        balanceInfo.innerText = `Balance: ${balance.toFixed(2)} $SPITOUT`;
-        if (balance >= MIN_BALANCE_USD) {
-          commentInput.disabled = false;
-          sendBtn.disabled = false;
-          showStatus(`Ready to spit.`);
-        } else {
-          commentInput.disabled = true;
-          sendBtn.disabled = true;
-          showStatus(`Need ${MIN_BALANCE_USD} $SPITOUT (You have ${balance.toFixed(2)})`);
+      // --- WALLET CONNECT LOGIC (ADAPTED FROM CODE A, with better check) ---
+      async function connectWallet() {
+        // Check for wallet availability first
+        if (typeof window.solana === 'undefined' && typeof window.solflare === 'undefined') {
+            alert("No Solana wallet found! Install Phantom or Solflare.");
+            return;
         }
-      } catch (err) {
-        showStatus("Failed to load balance.");
-        console.error(err);
+
+        if (window.solana && window.solana.isPhantom) {
+          wallet = window.solana;
+        } else if (window.solflare) {
+          wallet = window.solflare;
+        } else {
+            alert("No Solana wallet found! Install Phantom or Solflare.");
+            return;
+        }
+
+        try {
+          // The 'connect' call is what triggers the wallet pop-up and establishes the connection
+          await wallet.connect();
+          userPubkey = wallet.publicKey; // PublicKey object from provider
+          connectBtn.innerText = `Connected: ${userPubkey.toString().slice(0,4)}...${userPubkey.toString().slice(-4)}`;
+          showStatus(`Connected: ${wallet.name || 'Wallet'}`);
+          await updateBalance();
+        } catch (e) {
+          // This catches errors like 'User rejected the request' or 'Could not establish connection'
+          showStatus("Connection failed. Check your wallet extension.");
+          console.error("Wallet connection error:", e);
+        }
       }
-    }
-    // POST (FROM CODE B)
-    async function postComment(text) {
-      if (!wallet || !userPubkey) return;
-      const amount = 1 * (10 ** DECIMALS);
-      try {
-        const mintPub = new PublicKey(SPITOUT_MINT);
-        const userATA = await getAssociatedTokenAddress(mintPub, userPubkey);
-        const treasuryATA = await getAssociatedTokenAddress(mintPub, TREASURY_WALLET);
-        const tx = new Transaction().add(
-          createTransferInstruction(userATA, treasuryATA, userPubkey, amount)
-        );
-        tx.feePayer = userPubkey;
-        const { blockhash } = await connection.getLatestBlockhash();
-        tx.recentBlockhash = blockhash;
-        
-        // Use the wallet provider's signTransaction method
-        const signed = await wallet.signTransaction(tx);
-        const sig = await connection.sendRawTransaction(signed.serialize());
-        await connection.confirmTransaction(sig, 'confirmed');
-        
-        addComment(text);
-        commentInput.value = "";
-        await updateBalance();
-      } catch (e) {
-        alert("Error: " + (e.message || "Transaction failed"));
-        console.error(e);
+      // --- END WALLET CONNECT LOGIC ---
+
+      // BALANCE (FROM CODE B)
+      async function updateBalance() {
+        if (!userPubkey) return;
+        if (SPITOUT_MINT === "REPLACE_WITH_YOUR_MINT_ADDRESS") {
+          showStatus("Token not launched yet. Mint address pending.");
+          balanceInfo.innerText = "Launch pending...";
+          commentInput.disabled = sendBtn.disabled = true;
+          return;
+        }
+        try {
+          const mintPub = new PublicKey(SPITOUT_MINT);
+          const ata = await getAssociatedTokenAddress(mintPub, userPubkey);
+          let balance = 0;
+          try {
+            const acc = await connection.getTokenAccountBalance(ata);
+            balance = Number(acc.value.amount) / (10 ** DECIMALS);
+          } catch (e) { balance = 0; }
+          balanceInfo.innerText = `Balance: ${balance.toFixed(2)} $SPITOUT`;
+          if (balance >= MIN_BALANCE_USD) {
+            commentInput.disabled = false;
+            sendBtn.disabled = false;
+            showStatus(`Ready to spit.`);
+          } else {
+            commentInput.disabled = true;
+            sendBtn.disabled = true;
+            showStatus(`Need ${MIN_BALANCE_USD} $SPITOUT (You have ${balance.toFixed(2)})`);
+          }
+        } catch (err) {
+          showStatus("Failed to load balance.");
+          console.error(err);
+        }
       }
-    }
-    // EVENTS (FROM CODE B, adjusted for new wallet variable)
-    connectBtn.onclick = connectWallet;
-    sendBtn.onclick = async () => {
-      const text = commentInput.value.trim();
-      if (!text) return;
-      sendBtn.disabled = true;
-      commentInput.disabled = true;
-      await postComment(text);
-      setTimeout(updateBalance, 1000);
-    };
-    commentInput.addEventListener("keydown", e => {
-      if (e.key === "Enter" && !sendBtn.disabled) sendBtn.click();
-    });
-    // INIT (FROM CODE B)
-    addComment("Welcome to $SPITOUT – the place where truth costs $1.");
-    addComment("No filters. No logs. No mercy.");
-    
-    // Add disconnect listener for Phantom/Solflare
-    if (window.solana) {
-        window.solana.on("disconnect", () => {
-            userPubkey = null;
-            wallet = null;
-            connectBtn.innerText = "Connect Wallet";
-            showStatus("Wallet disconnected.");
-            balanceInfo.innerText = "Balance: —";
-            commentInput.disabled = sendBtn.disabled = true;
-        });
-    }
-    if (window.solflare) {
-        window.solflare.on("disconnect", () => {
-            userPubkey = null;
-            wallet = null;
-            connectBtn.innerText = "Connect Wallet";
-            showStatus("Wallet disconnected.");
-            balanceInfo.innerText = "Balance: —";
-            commentInput.disabled = sendBtn.disabled = true;
-        });
-    }
-  })();
+      // POST (FROM CODE B)
+      async function postComment(text) {
+        if (!wallet || !userPubkey) return;
+        const amount = 1 * (10 ** DECIMALS);
+        try {
+          const mintPub = new PublicKey(SPITOUT_MINT);
+          const userATA = await getAssociatedTokenAddress(mintPub, userPubkey);
+          const treasuryATA = await getAssociatedTokenAddress(mintPub, TREASURY_WALLET);
+          const tx = new Transaction().add(
+            createTransferInstruction(userATA, treasuryATA, userPubkey, amount)
+          );
+          tx.feePayer = userPubkey;
+          const { blockhash } = await connection.getLatestBlockhash();
+          tx.recentBlockhash = blockhash;
+          
+          // Use the wallet provider's signTransaction method
+          const signed = await wallet.signTransaction(tx);
+          const sig = await connection.sendRawTransaction(signed.serialize());
+          await connection.confirmTransaction(sig, 'confirmed');
+          
+          addComment(text);
+          commentInput.value = "";
+          await updateBalance();
+        } catch (e) {
+          alert("Error: " + (e.message || "Transaction failed"));
+          console.error(e);
+        }
+      }
+      // EVENTS (FROM CODE B, adjusted for new wallet variable)
+      connectBtn.onclick = connectWallet;
+      sendBtn.onclick = async () => {
+        const text = commentInput.value.trim();
+        if (!text) return;
+        sendBtn.disabled = true;
+        commentInput.disabled = true;
+        await postComment(text);
+        setTimeout(updateBalance, 1000);
+      };
+      commentInput.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !sendBtn.disabled) sendBtn.click();
+      });
+      // INIT (FROM CODE B)
+      addComment("Welcome to $SPITOUT – the place where truth costs $1.");
+      addComment("No filters. No logs. No mercy.");
+      
+      // Add disconnect listener for Phantom/Solflare
+      if (window.solana) {
+          window.solana.on("disconnect", () => {
+              userPubkey = null;
+              wallet = null;
+              connectBtn.innerText = "Connect Wallet";
+              showStatus("Wallet disconnected.");
+              balanceInfo.innerText = "Balance: —";
+              commentInput.disabled = sendBtn.disabled = true;
+          });
+      }
+      if (window.solflare) {
+          window.solflare.on("disconnect", () => {
+              userPubkey = null;
+              wallet = null;
+              connectBtn.innerText = "Connect Wallet";
+              showStatus("Wallet disconnected.");
+              balanceInfo.innerText = "Balance: —";
+              commentInput.disabled = sendBtn.disabled = true;
+          });
+      }
+    })();
+  });
   </script>
 </body>
 </html>
