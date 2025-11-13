@@ -115,19 +115,17 @@
   </div>
   <div id="status">Connect your wallet to start chatting.</div>
 
-  <!-- Solana Web3 + Multiwallet Adapter -->
+  <!-- Solana SDKs -->
   <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter-wallets@latest/lib/index.iife.js"></script>
-  <script src="https://unpkg.com/@solana/wallet-adapter@latest/lib/index.iife.js"></script>
+  <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
 
   <script>
-    const { Connection, PublicKey } = solanaWeb3;
-    const { WalletAdapterNetwork } = solanaWalletAdapterBase;
-    const { getWallets } = solanaWalletAdapterWallets;
+    const { Connection, PublicKey, Transaction } = solanaWeb3;
+    const { getAssociatedTokenAddress, createTransferInstruction } = splToken;
 
-    const treasuryWallet = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    const SPITOUT_TOKEN_MINT = ""; // hier später deine Token-Adresse einfügen
+    const TREASURY_WALLET = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
+    const SPITOUT_TOKEN_MINT = ""; // 🔹 später deine Token Mint-Adresse hier eintragen
+    const DECIMALS = 9; // Standard für SPL-Token
 
     const connection = new Connection("https://api.mainnet-beta.solana.com");
     const walletButton = document.getElementById("wallet-button");
@@ -136,43 +134,66 @@
     const messagesDiv = document.getElementById("messages");
     const statusDiv = document.getElementById("status");
 
-    let wallet = null;
+    let provider = null;
     let publicKey = null;
 
     async function connectWallet() {
       try {
-        const wallets = getWallets({ network: WalletAdapterNetwork.Mainnet });
-        // Prüft, ob eine Wallet-Erweiterung vorhanden ist
-        for (let w of wallets) {
-          if (w.readyState === "Installed" && w.adapter.connect) {
-            wallet = w.adapter;
-            break;
-          }
-        }
+        if (window.solana?.isPhantom) provider = window.solana;
+        else if (window.solflare?.isSolflare) provider = window.solflare;
+        else if (window.bitget?.solana) provider = window.bitget.solana;
+        else if (window.binance?.solana) provider = window.binance.solana;
+        else return alert("No compatible wallet found! Try Phantom, Solflare, Bitget or Binance.");
 
-        if (!wallet) {
-          alert("No Solana wallet detected! Install Phantom, Solflare, Backpack, etc.");
-          return;
-        }
+        await provider.connect();
+        publicKey = provider.publicKey;
 
-        await wallet.connect();
-        publicKey = wallet.publicKey;
-        walletButton.textContent = "Connected: " + publicKey.toString().slice(0,4) + "..." + publicKey.toString().slice(-4);
+        walletButton.textContent = `Connected: ${publicKey.toString().slice(0,4)}...${publicKey.toString().slice(-4)}`;
         input.disabled = false;
         sendButton.disabled = false;
-        statusDiv.textContent = "You can now chat. Each post sends 1 USD in SPITOUT.";
-      } catch (err) {
-        console.error("Connection failed:", err);
-        alert("Failed to connect wallet.");
+        statusDiv.textContent = "Wallet connected — ready to SPIT OUT 💬";
+
+      } catch (e) {
+        console.error(e);
+        alert("Connection failed: " + e.message);
       }
     }
 
     async function sendMessage() {
       const msg = input.value.trim();
       if (!msg) return;
-      input.value = "";
+
       appendMessage(publicKey.toString(), msg);
-      statusDiv.textContent = "Sent 1 USD worth of SPITOUT to Treasury Wallet.";
+      input.value = "";
+
+      if (!SPITOUT_TOKEN_MINT) {
+        statusDiv.textContent = "⚠️ Token Mint not set yet. Transaction skipped.";
+        return;
+      }
+
+      try {
+        const mintPub = new PublicKey(SPITOUT_TOKEN_MINT);
+        const userATA = await getAssociatedTokenAddress(mintPub, publicKey);
+        const treasuryATA = await getAssociatedTokenAddress(mintPub, TREASURY_WALLET);
+
+        const tx = new Transaction().add(
+          createTransferInstruction(userATA, treasuryATA, publicKey, 1 * (10 ** DECIMALS))
+        );
+
+        tx.feePayer = publicKey;
+        const { blockhash } = await connection.getLatestBlockhash();
+        tx.recentBlockhash = blockhash;
+
+        const signed = await provider.signTransaction(tx);
+        const sig = await connection.sendRawTransaction(signed.serialize());
+        await connection.confirmTransaction(sig, "confirmed");
+
+        statusDiv.textContent = "✅ Sent 1 USD worth of $SPITOUT to Treasury Wallet.";
+
+      } catch (err) {
+        console.error(err);
+        statusDiv.textContent = "❌ Transaction failed.";
+      }
     }
 
     function appendMessage(wallet, text) {
