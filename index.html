@@ -1,224 +1,155 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<title>Chat</title>
+<meta charset="UTF-8">
+<title>Connect Wallet</title>
 <style>
-    body { background:black; color:white; font-family:Arial; }
-    #chatBox { width:100%; height:200px; background:#111; padding:10px; overflow-y:auto; border:1px solid #444; }
-    #inputBox { width:100%; padding:10px; margin-top:10px; background:#222; color:white; border:1px solid #555; }
-    #postBtn { padding:10px 20px; margin-top:10px; background:#333; color:white; border:none; cursor:pointer; }
-    #postBtn:disabled { background:#555; cursor:not-allowed; }
-    #walletPopup {
-        display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-        background:rgba(0,0,0,0.8); justify-content:center; align-items:center;
+    body {
+        background:#000; color:#fff; 
+        display:flex; justify-content:center;
+        align-items:center; height:100vh;
+        font-family:Arial, sans-serif;
+    }
+    #wallet-button {
+        background:#00ffc3; color:#000;
+        padding:14px 28px; border:none;
+        border-radius:12px; cursor:pointer;
+        font-size:18px;
+    }
+    /* Popup */
+    .popup {
+        position:fixed; top:0; left:0; right:0; bottom:0;
+        display:none; justify-content:center; align-items:center;
+        background:rgba(0,0,0,0.7);
     }
     .popup-content {
-        background:#222; padding:20px; border-radius:10px; width:300px; text-align:center;
+        background:#111; padding:20px;
+        border-radius:12px; width:280px;
+        text-align:center; border:1px solid #333;
     }
     .wallet-btn {
-        width:100%; padding:12px; background:#333; border:none; color:white;
-        margin:7px 0; cursor:pointer; border-radius:8px;
+        width:100%; padding:12px;
+        margin:6px 0; border:none;
+        border-radius:8px; cursor:pointer;
+        background:#00ffc3; color:#000;
+        font-weight:bold;
     }
 </style>
 </head>
 <body>
 
-<button id="connectBtn">Connect Wallet</button>
+<button id="wallet-button">Connect Wallet</button>
 
-<div id="walletPopup">
-    <div class="popup-content">
-        <h3>Select Wallet</h3>
-        <button class="wallet-btn" data-wallet="phantom">Phantom</button>
-        <button class="wallet-btn" data-wallet="solflare">Solflare</button>
-        <button class="wallet-btn" data-wallet="bitget">Bitget</button>
-        <button class="wallet-btn" data-wallet="binance">Binance Wallet</button>
-        <button class="wallet-btn" onclick="closePopup()">Cancel</button>
-    </div>
+<!-- POPUP -->
+<div id="wallet-popup" class="popup">
+  <div class="popup-content">
+    <h3>Select Wallet</h3>
+    <div id="wallet-list"></div>
+    <button onclick="closePopup()" style="margin-top:10px;">Cancel</button>
+  </div>
 </div>
 
-<div id="chatBox"></div>
-<textarea id="inputBox" placeholder="Write something..." disabled></textarea>
-<button id="postBtn" disabled>Post</button>
+<!-- Solana Web3 -->
+<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
 
-<script type="module">
-import {
-    Connection,
-    PublicKey,
-    Transaction,
-    SystemProgram,
-    clusterApiUrl
-} from "https://esm.sh/@solana/web3.js";
+<script>
+const WALLET_PROVIDERS = {
+    phantom: {
+        name: "Phantom",
+        check: () => window.phantom?.solana?.isPhantom,
+        get: () => window.phantom.solana
+    },
+    solflare: {
+        name: "Solflare",
+        check: () => window.solflare?.isSolflare,
+        get: () => window.solflare
+    },
+    bitget: {
+        name: "Bitget",
+        check: () => window.bitkeep?.solana,
+        get: () => window.bitkeep.solana
+    },
+    binance: {
+        name: "Binance Wallet",
+        check: () => window.binanceChain?.solana,
+        get: () => window.binanceChain.solana
+    },
+    okx: {
+        name: "OKX Wallet",
+        check: () => window.okxwallet?.solana,
+        get: () => window.okxwallet.solana
+    },
+    trust: {
+        name: "Trust Wallet",
+        check: () => window.trustwallet?.solana,
+        get: () => window.trustwallet.solana
+    },
+    safepal: {
+        name: "SafePal",
+        check: () => window.safepal?.solana,
+        get: () => window.safepal.solana
+    },
+    crypto: {
+        name: "Crypto.com Wallet",
+        check: () => window["defi-wallet"]?.solana,
+        get: () => window["defi-wallet"].solana
+    },
+    bybit: {
+        name: "Bybit Wallet",
+        check: () => window.bybitwallet?.solana,
+        get: () => window.bybitwallet.solana
+    }
+};
 
-import {
-    getAssociatedTokenAddress,
-    createTransferInstruction
-} from "https://esm.sh/@solana/spl-token";
+let publicKey = null;
 
+// ---------- POPUP ----------
+function showPopup() {
+    const list = document.getElementById("wallet-list");
+    list.innerHTML = "";
 
-// -------------------------------------------------------------
-// SETTINGS (HIER SPÄTER TOKEN MINT EINTRAGEN!!!)
-// -------------------------------------------------------------
-const TOKEN_MINT = "";  // <<<<<<<<< SPÄTER EINTRAGEN
-const DECIMALS = 9;      // normal für SPL Tokens
-
-// Deine Wallet (Treasury)
-const TREASURY = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-
-// RPC
-const connection = new Connection("https://api.mainnet-beta.solana.com");
-
-let walletProvider = null;
-let userPublicKey = null;
-
-
-// -------------------------------------------------------------
-// POPUP
-// -------------------------------------------------------------
-const popup = document.getElementById("walletPopup");
-
-function openPopup() { popup.style.display = "flex"; }
-function closePopup() { popup.style.display = "none"; }
-
-document.getElementById("connectBtn").addEventListener("click", () => {
-    openPopup();
-});
-
-
-// -------------------------------------------------------------
-// WALLET PROVIDER FINDER (AUTO-SCANNER)
-// -------------------------------------------------------------
-function getProvider(name) {
-    const w = window;
-
-    if (name === "phantom" && w.phantom?.solana?.isPhantom) return w.phantom.solana;
-    if (name === "solflare" && w.solflare?.isSolflare) return w.solflare;
-    if (name === "bitget" && w.bitkeep?.solana) return w.bitkeep.solana;
-    if (name === "binance" && w.binanceChain?.solana) return w.binanceChain.solana;
-
-    return null;
-}
-
-
-// -------------------------------------------------------------
-// WALLET AUS POPUP WÄHLEN
-// -------------------------------------------------------------
-document.querySelectorAll(".wallet-btn[data-wallet]").forEach(btn => {
-    btn.onclick = async () => {
-        const name = btn.dataset.wallet;
-        walletProvider = getProvider(name);
-
-        if (!walletProvider) {
-            alert(name + " Wallet not detected!");
-            return;
+    const detected = [];
+    for (const key in WALLET_PROVIDERS) {
+        if (WALLET_PROVIDERS[key].check()) {
+            detected.push({ key, name: WALLET_PROVIDERS[key].name });
         }
-
-        try {
-            const resp = await walletProvider.connect();
-            userPublicKey = new PublicKey(resp.publicKey.toString());
-            document.getElementById("connectBtn").innerText = "Wallet Connected";
-
-            closePopup();
-            await checkBalanceToUnlock();
-
-        } catch (e) {
-            alert("Wallet connection failed");
-        }
-    };
-});
-
-
-// -------------------------------------------------------------
-// 1️⃣ BALANCE CHECK (≥30 USD in SPITOUT)
-// -------------------------------------------------------------
-async function checkBalanceToUnlock() {
-
-    if (!TOKEN_MINT) {
-        console.warn("TOKEN MINT NOT SET — CHAT STAYS LOCKED");
-        return;
     }
 
-    const mint = new PublicKey(TOKEN_MINT);
-
-    const ata = await getAssociatedTokenAddress(mint, userPublicKey);
-
-    try {
-        const balance = await connection.getTokenAccountBalance(ata);
-        const amount = balance.value.uiAmount ?? 0;
-
-        if (amount >= 30) {
-            document.getElementById("inputBox").disabled = false;
-            document.getElementById("postBtn").disabled = false;
-        }
-
-    } catch {
-        console.warn("User does not hold this token.");
+    if (detected.length === 0) {
+        list.innerHTML = `<p>No Solana wallet detected.</p>`;
+    } else {
+        detected.forEach(w => {
+            const btn = document.createElement("button");
+            btn.className = "wallet-btn";
+            btn.textContent = w.name;
+            btn.onclick = () => connectWallet(w.key);
+            list.appendChild(btn);
+        });
     }
+
+    document.getElementById("wallet-popup").style.display = "flex";
 }
 
-
-// -------------------------------------------------------------
-// 2️⃣ PRO POST → 1 USD IN SPITOUT AN DEINE WALLET
-// -------------------------------------------------------------
-document.getElementById("postBtn").addEventListener("click", async () => {
-
-    if (!TOKEN_MINT) {
-        alert("Token mint not set yet!");
-        return;
-    }
-
-    const input = document.getElementById("inputBox");
-    const text = input.value.trim();
-    if (!text) return;
-
-    try {
-        await sendOneDollar();
-        addPost(text);
-        input.value = "";
-
-    } catch (e) {
-        alert("Payment failed: " + e);
-    }
-});
-
-
-async function sendOneDollar() {
-    const mint = new PublicKey(TOKEN_MINT);
-
-    const fromATA = await getAssociatedTokenAddress(mint, userPublicKey);
-    const toATA = await getAssociatedTokenAddress(mint, TREASURY);
-
-    const amount = 1 * (10 ** DECIMALS); // 1 USD in SPITOUT (du setzt Preis später fest!)
-
-    const ix = createTransferInstruction(fromATA, toATA, userPublicKey, amount);
-
-    const tx = new Transaction().add(ix);
-    tx.feePayer = userPublicKey;
-
-    const block = await connection.getLatestBlockhash();
-    tx.recentBlockhash = block.blockhash;
-
-    const signed = await walletProvider.signTransaction(tx);
-    const txid = await connection.sendRawTransaction(signed.serialize());
-    await connection.confirmTransaction(txid, "confirmed");
-
-    return txid;
+function closePopup() {
+    document.getElementById("wallet-popup").style.display = "none";
 }
 
+// ---------- CONNECT ----------
+async function connectWallet(key) {
+    const provider = WALLET_PROVIDERS[key].get();
+    if (!provider) return alert("Wallet not found");
 
-// -------------------------------------------------------------
-// 3️⃣ KOMMENTAR ANZEIGEN (LOCAL ONLY, WIE VORHER!)
-// -------------------------------------------------------------
-function addPost(msg) {
-    const box = document.getElementById("chatBox");
+    await provider.connect();
+    publicKey = provider.publicKey;
 
-    const avatars = ["🐱","🐸","🐵","🦊","🐼","🐧","🐶"];
-    const avatar = avatars[Math.floor(Math.random() * avatars.length)];
+    document.getElementById("wallet-button").textContent =
+        "Connected: " + publicKey.toString().slice(0,4) + "..." + publicKey.toString().slice(-4);
 
-    const el = document.createElement("div");
-    el.innerText = avatar + "  " + msg;
-    box.appendChild(el);
+    closePopup();
 }
+
+// ---------- BUTTON CLICK ----------
+document.getElementById("wallet-button").onclick = showPopup;
 </script>
 
 </body>
