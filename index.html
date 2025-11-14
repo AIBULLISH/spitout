@@ -1,230 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SPITOUT Chat</title>
-  <link rel="icon" type="image/png" href="logo.png" />
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: radial-gradient(circle at top, #0a0a0a 0%, #000 100%);
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+<meta charset="UTF-8" />
+<title>Chat</title>
+<style>
+    body { background:black; color:white; font-family:Arial; }
+    #chatBox { width:100%; height:200px; background:#111; padding:10px; overflow-y:auto; border:1px solid #444; }
+    #inputBox { width:100%; padding:10px; margin-top:10px; background:#222; color:white; border:1px solid #555; }
+    #postBtn { padding:10px 20px; margin-top:10px; background:#333; color:white; border:none; cursor:pointer; }
+    #postBtn:disabled { background:#555; cursor:not-allowed; }
+    #walletPopup {
+        display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.8); justify-content:center; align-items:center;
     }
-    img.logo { width:140px; margin:40px auto 10px; display:block; }
-    h1 { font-size:2rem; color:#00ffc3; margin-bottom:20px; text-shadow:0 0 10px #00ffc3; }
-    #wallet-select, #wallet-button {
-      background:#00ffc3; color:#000; border:none; padding:12px 24px; font-size:1rem;
-      border-radius:12px; cursor:pointer; margin-bottom:10px; transition:all .2s ease;
+    .popup-content {
+        background:#222; padding:20px; border-radius:10px; width:300px; text-align:center;
     }
-    #wallet-select:hover, #wallet-button:hover { background:#00e0b3; transform:scale(1.03); }
-    #chat-container {
-      width:90%; max-width:600px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
-      border-radius:16px; padding:20px; backdrop-filter:blur(8px);
+    .wallet-btn {
+        width:100%; padding:12px; background:#333; border:none; color:white;
+        margin:7px 0; cursor:pointer; border-radius:8px;
     }
-    #messages { height:300px; overflow-y:auto; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:10px; padding-bottom:10px; }
-    .message { margin:8px 0; padding:8px 10px; background:rgba(0,255,195,0.08); border-radius:8px; word-wrap:break-word; }
-    .wallet { font-size:0.8rem; opacity:.75; margin-bottom:6px; }
-    #input-area { display:flex; gap:10px; }
-    #input { flex:1; padding:10px; border-radius:8px; border:none; outline:none; background:rgba(255,255,255,0.06); color:#fff; }
-    #send-button { background:#00ffc3; color:#000; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; }
-    #status { margin-top:8px; font-size:0.9rem; color:#aaa; text-align:center; min-height:1.2em; }
-    #debug { position:fixed; right:12px; bottom:12px; font-size:11px; color:#999; }
-  </style>
+</style>
 </head>
 <body>
-  <img src="logo.png" alt="Logo" class="logo" />
-  <h1>SPITOUT Chat</h1>
 
-  <!-- wallet UI -->
-  <select id="wallet-select">
-    <option value="auto">Auto detect (recommended)</option>
-    <option value="phantom">Phantom</option>
-    <option value="solflare">Solflare</option>
-    <option value="backpack">Backpack</option>
-    <option value="bitget">Bitget</option>
-    <option value="binance">Binance</option>
-    <option value="okx">OKX</option>
-  </select>
-  <button id="wallet-button">Connect Wallet</button>
+<button id="connectBtn">Connect Wallet</button>
 
-  <div id="chat-container">
-    <div id="messages"></div>
-    <div id="input-area">
-      <input id="input" type="text" placeholder="Type your message..." disabled />
-      <button id="send-button" disabled>Send</button>
+<div id="walletPopup">
+    <div class="popup-content">
+        <h3>Select Wallet</h3>
+        <button class="wallet-btn" data-wallet="phantom">Phantom</button>
+        <button class="wallet-btn" data-wallet="solflare">Solflare</button>
+        <button class="wallet-btn" data-wallet="bitget">Bitget</button>
+        <button class="wallet-btn" data-wallet="binance">Binance Wallet</button>
+        <button class="wallet-btn" onclick="closePopup()">Cancel</button>
     </div>
-  </div>
+</div>
 
-  <div id="status">Connect your wallet to start chatting.</div>
-  <div id="debug" aria-hidden="true"></div>
+<div id="chatBox"></div>
+<textarea id="inputBox" placeholder="Write something..." disabled></textarea>
+<button id="postBtn" disabled>Post</button>
 
-  <!-- solana library (global solanaWeb3) -->
-  <script src="https://unpkg.com/@solana/web3.js@1.91.4/lib/index.iife.min.js"></script>
+<script type="module">
+import {
+    Connection,
+    PublicKey,
+    Transaction,
+    SystemProgram,
+    clusterApiUrl
+} from "https://esm.sh/@solana/web3.js";
 
-  <script>
-  (function(){
-    // --- config ---
-    const { Connection, PublicKey } = solanaWeb3;
-    const TREASURY_WALLET = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    const SPITOUT_TOKEN_MINT = ""; // leave empty for now
-    const DECIMALS = 9;
+import {
+    getAssociatedTokenAddress,
+    createTransferInstruction
+} from "https://esm.sh/@solana/spl-token";
 
-    // --- DOM ---
-    const walletSelect = document.getElementById("wallet-select");
-    const walletButton = document.getElementById("wallet-button");
-    const input = document.getElementById("input");
-    const sendButton = document.getElementById("send-button");
-    const messagesDiv = document.getElementById("messages");
-    const statusDiv = document.getElementById("status");
-    const debugDiv = document.getElementById("debug");
 
-    const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+// -------------------------------------------------------------
+// SETTINGS (HIER SPÄTER TOKEN MINT EINTRAGEN!!!)
+// -------------------------------------------------------------
+const TOKEN_MINT = "";  // <<<<<<<<< SPÄTER EINTRAGEN
+const DECIMALS = 9;      // normal für SPL Tokens
 
-    // provider + publicKey will be set after connect
-    let provider = null;
-    let publicKey = null;
+// Deine Wallet (Treasury)
+const TREASURY = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
 
-    // helper: safe check & logging
-    function logDebug(...args){ console.log(...args); debugDiv.textContent = (new Date()).toLocaleTimeString() + " • " + args[0]; }
+// RPC
+const connection = new Connection("https://api.mainnet-beta.solana.com");
 
-    // known provider checks (function returns provider object or null)
-    const PROVIDERS = {
-      phantom: () => (window.solana && window.solana.isPhantom) ? window.solana : null,
-      solflare: () => (window.solflare && window.solflare.isSolflare) ? window.solflare : null,
-      backpack: () => (window.backpack && window.backpack.solana) ? window.backpack.solana : null,
-      bitget: () => (window.bitget && window.bitget.solana) ? window.bitget.solana : null,
-      binance: () => (window.BinanceChain && window.BinanceChain.solana) ? window.BinanceChain.solana : null,
-      okx: () => (window.okxwallet && window.okxwallet.solana) ? window.okxwallet.solana : null
+let walletProvider = null;
+let userPublicKey = null;
+
+
+// -------------------------------------------------------------
+// POPUP
+// -------------------------------------------------------------
+const popup = document.getElementById("walletPopup");
+
+function openPopup() { popup.style.display = "flex"; }
+function closePopup() { popup.style.display = "none"; }
+
+document.getElementById("connectBtn").addEventListener("click", () => {
+    openPopup();
+});
+
+
+// -------------------------------------------------------------
+// WALLET PROVIDER FINDER (AUTO-SCANNER)
+// -------------------------------------------------------------
+function getProvider(name) {
+    const w = window;
+
+    if (name === "phantom" && w.phantom?.solana?.isPhantom) return w.phantom.solana;
+    if (name === "solflare" && w.solflare?.isSolflare) return w.solflare;
+    if (name === "bitget" && w.bitkeep?.solana) return w.bitkeep.solana;
+    if (name === "binance" && w.binanceChain?.solana) return w.binanceChain.solana;
+
+    return null;
+}
+
+
+// -------------------------------------------------------------
+// WALLET AUS POPUP WÄHLEN
+// -------------------------------------------------------------
+document.querySelectorAll(".wallet-btn[data-wallet]").forEach(btn => {
+    btn.onclick = async () => {
+        const name = btn.dataset.wallet;
+        walletProvider = getProvider(name);
+
+        if (!walletProvider) {
+            alert(name + " Wallet not detected!");
+            return;
+        }
+
+        try {
+            const resp = await walletProvider.connect();
+            userPublicKey = new PublicKey(resp.publicKey.toString());
+            document.getElementById("connectBtn").innerText = "Wallet Connected";
+
+            closePopup();
+            await checkBalanceToUnlock();
+
+        } catch (e) {
+            alert("Wallet connection failed");
+        }
     };
+});
 
-    // Auto-detect order (best-effort)
-    const AUTO_ORDER = ['phantom','solflare','backpack','bitget','binance','okx'];
 
-    // connect logic (dropdown driven or auto)
-    async function connectWallet() {
-      try {
-        let choice = walletSelect.value;
-        let prov = null;
-        if (choice === 'auto') {
-          // loop in preferred order and pick first available
-          for (const name of AUTO_ORDER) {
-            prov = PROVIDERS[name] ? PROVIDERS[name]() : null;
-            if (prov) { choice = name; break; }
-          }
-        } else {
-          prov = PROVIDERS[choice] ? PROVIDERS[choice]() : null;
-        }
+// -------------------------------------------------------------
+// 1️⃣ BALANCE CHECK (≥30 USD in SPITOUT)
+// -------------------------------------------------------------
+async function checkBalanceToUnlock() {
 
-        if (!prov) {
-          alert("Wallet not found for selection: " + choice + "\nMake sure the extension/app is installed and unlocked.");
-          logDebug("No provider for: " + choice);
-          return;
-        }
-
-        provider = prov;
-
-        // Many providers expose connect() that must be called from user gesture
-        if (typeof provider.connect === 'function') {
-          // Some providers (like Phantom) will return { publicKey } on connect()
-          const resp = await provider.connect();
-          // try several ways to get publicKey
-          publicKey = resp?.publicKey || provider.publicKey || (resp?.publicKey?.toString ? resp.publicKey : null);
-          // normalize to PublicKey object if string
-          if (publicKey && typeof publicKey !== 'object') {
-            try { publicKey = new PublicKey(publicKey.toString()); }
-            catch(e){ /* ignore */ }
-          } else if (publicKey && publicKey.toBase58) {
-            // already PublicKey-like (Phantom)
-          }
-        } else {
-          // If provider doesn't have connect (rare), try to read provider.publicKey
-          publicKey = provider.publicKey || null;
-        }
-
-        if (!publicKey) {
-          // final attempt: provider.publicKey may be object with toString()
-          if (provider && provider.publicKey && provider.publicKey.toString) {
-            publicKey = new PublicKey(provider.publicKey.toString());
-          }
-        }
-
-        if (!publicKey) {
-          alert("Connected but couldn't read public key. See console for details.");
-          console.error("Provider connected but no publicKey:", provider);
-          return;
-        }
-
-        // show connected
-        walletButton.textContent = `Connected: ${publicKey.toString().slice(0,4)}...${publicKey.toString().slice(-4)}`;
-        statusDiv.textContent = `Connected to ${choice}. You can now chat.`;
-        input.disabled = false;
-        sendButton.disabled = false;
-        logDebug("Connected", choice, publicKey.toString());
-
-        // listen for disconnect if provider supports event
-        if (typeof provider.on === 'function') {
-          try {
-            provider.on('disconnect', () => {
-              provider = null; publicKey = null;
-              walletButton.textContent = "Connect Wallet";
-              input.disabled = true; sendButton.disabled = true;
-              statusDiv.textContent = "Wallet disconnected.";
-              logDebug("Wallet disconnected");
-            });
-          } catch(e){ /* ignore */ }
-        }
-      } catch (err) {
-        console.error("connectWallet error:", err);
-        alert("Connection failed: " + (err?.message || err));
-        logDebug("connect error: " + (err?.message || err));
-      }
-    }
-
-    // append message
-    function appendMessage(pkStr, text) {
-      const row = document.createElement('div');
-      row.className = 'message';
-      const walletLine = `<div class="wallet">${pkStr.slice(0,4)}...${pkStr.slice(-4)}</div>`;
-      row.innerHTML = walletLine + text;
-      messagesDiv.appendChild(row);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    // send (no token mint set => simulate)
-    async function sendMessage() {
-      if (!publicKey) { alert('Connect wallet first'); return; }
-      const msg = input.value.trim();
-      if (!msg) return;
-      input.value = '';
-      appendMessage(publicKey.toString(), msg);
-
-      if (!SPITOUT_TOKEN_MINT) {
-        statusDiv.textContent = '⚠️ Token mint not set — transaction skipped (demo mode).';
+    if (!TOKEN_MINT) {
+        console.warn("TOKEN MINT NOT SET — CHAT STAYS LOCKED");
         return;
-      }
-
-      // If you later set SPITOUT_TOKEN_MINT, implement SPL transfer here.
-      // Keep UX responsive: we show a "sent" message after the on-chain transfer completes.
     }
 
-    // wiring
-    walletButton.addEventListener('click', connectWallet);
-    sendButton.addEventListener('click', sendMessage);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') sendButton.click(); });
+    const mint = new PublicKey(TOKEN_MINT);
 
-    // initial message
-    appendMessage('system', 'Welcome to SPITOUT — connect a wallet to post. (Demo mode until mint set)');
+    const ata = await getAssociatedTokenAddress(mint, userPublicKey);
 
-    // safe: expose debug to console
-    window.__SPITOUT = { connectWallet, sendMessage, connection };
+    try {
+        const balance = await connection.getTokenAccountBalance(ata);
+        const amount = balance.value.uiAmount ?? 0;
 
-  })();
-  </script>
+        if (amount >= 30) {
+            document.getElementById("inputBox").disabled = false;
+            document.getElementById("postBtn").disabled = false;
+        }
+
+    } catch {
+        console.warn("User does not hold this token.");
+    }
+}
+
+
+// -------------------------------------------------------------
+// 2️⃣ PRO POST → 1 USD IN SPITOUT AN DEINE WALLET
+// -------------------------------------------------------------
+document.getElementById("postBtn").addEventListener("click", async () => {
+
+    if (!TOKEN_MINT) {
+        alert("Token mint not set yet!");
+        return;
+    }
+
+    const input = document.getElementById("inputBox");
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+        await sendOneDollar();
+        addPost(text);
+        input.value = "";
+
+    } catch (e) {
+        alert("Payment failed: " + e);
+    }
+});
+
+
+async function sendOneDollar() {
+    const mint = new PublicKey(TOKEN_MINT);
+
+    const fromATA = await getAssociatedTokenAddress(mint, userPublicKey);
+    const toATA = await getAssociatedTokenAddress(mint, TREASURY);
+
+    const amount = 1 * (10 ** DECIMALS); // 1 USD in SPITOUT (du setzt Preis später fest!)
+
+    const ix = createTransferInstruction(fromATA, toATA, userPublicKey, amount);
+
+    const tx = new Transaction().add(ix);
+    tx.feePayer = userPublicKey;
+
+    const block = await connection.getLatestBlockhash();
+    tx.recentBlockhash = block.blockhash;
+
+    const signed = await walletProvider.signTransaction(tx);
+    const txid = await connection.sendRawTransaction(signed.serialize());
+    await connection.confirmTransaction(txid, "confirmed");
+
+    return txid;
+}
+
+
+// -------------------------------------------------------------
+// 3️⃣ KOMMENTAR ANZEIGEN (LOCAL ONLY, WIE VORHER!)
+// -------------------------------------------------------------
+function addPost(msg) {
+    const box = document.getElementById("chatBox");
+
+    const avatars = ["🐱","🐸","🐵","🦊","🐼","🐧","🐶"];
+    const avatar = avatars[Math.floor(Math.random() * avatars.length)];
+
+    const el = document.createElement("div");
+    el.innerText = avatar + "  " + msg;
+    box.appendChild(el);
+}
+</script>
+
 </body>
 </html>
