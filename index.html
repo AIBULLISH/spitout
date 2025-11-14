@@ -1,73 +1,230 @@
-<script>
-  const { Connection, PublicKey } = solanaWeb3;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SPITOUT Chat</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle at top, #0a0a0a 0%, #000 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    img.logo { width:140px; margin:40px auto 10px; display:block; }
+    h1 { font-size:2rem; color:#00ffc3; margin-bottom:20px; text-shadow:0 0 10px #00ffc3; }
+    #wallet-select, #wallet-button {
+      background:#00ffc3; color:#000; border:none; padding:12px 24px; font-size:1rem;
+      border-radius:12px; cursor:pointer; margin-bottom:10px; transition:all .2s ease;
+    }
+    #wallet-select:hover, #wallet-button:hover { background:#00e0b3; transform:scale(1.03); }
+    #chat-container {
+      width:90%; max-width:600px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+      border-radius:16px; padding:20px; backdrop-filter:blur(8px);
+    }
+    #messages { height:300px; overflow-y:auto; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:10px; padding-bottom:10px; }
+    .message { margin:8px 0; padding:8px 10px; background:rgba(0,255,195,0.08); border-radius:8px; word-wrap:break-word; }
+    .wallet { font-size:0.8rem; opacity:.75; margin-bottom:6px; }
+    #input-area { display:flex; gap:10px; }
+    #input { flex:1; padding:10px; border-radius:8px; border:none; outline:none; background:rgba(255,255,255,0.06); color:#fff; }
+    #send-button { background:#00ffc3; color:#000; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; }
+    #status { margin-top:8px; font-size:0.9rem; color:#aaa; text-align:center; min-height:1.2em; }
+    #debug { position:fixed; right:12px; bottom:12px; font-size:11px; color:#999; }
+  </style>
+</head>
+<body>
+  <img src="logo.png" alt="Logo" class="logo" />
+  <h1>SPITOUT Chat</h1>
 
-  const treasuryWallet = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-  const SPITOUT_TOKEN_MINT = ""; 
+  <!-- wallet UI -->
+  <select id="wallet-select">
+    <option value="auto">Auto detect (recommended)</option>
+    <option value="phantom">Phantom</option>
+    <option value="solflare">Solflare</option>
+    <option value="backpack">Backpack</option>
+    <option value="bitget">Bitget</option>
+    <option value="binance">Binance</option>
+    <option value="okx">OKX</option>
+  </select>
+  <button id="wallet-button">Connect Wallet</button>
 
-  let provider = null;
-  let publicKey = null;
+  <div id="chat-container">
+    <div id="messages"></div>
+    <div id="input-area">
+      <input id="input" type="text" placeholder="Type your message..." disabled />
+      <button id="send-button" disabled>Send</button>
+    </div>
+  </div>
 
-  const connection = new Connection("https://api.mainnet-beta.solana.com");
+  <div id="status">Connect your wallet to start chatting.</div>
+  <div id="debug" aria-hidden="true"></div>
 
-  const walletButton = document.getElementById("wallet-button");
-  const input = document.getElementById("input");
-  const sendButton = document.getElementById("send-button");
-  const messagesDiv = document.getElementById("messages");
-  const statusDiv = document.getElementById("status");
+  <!-- solana library (global solanaWeb3) -->
+  <script src="https://unpkg.com/@solana/web3.js@1.91.4/lib/index.iife.min.js"></script>
 
-  // 🔥 Liste möglicher Wallets (automatische Erkennung)
-  const WALLET_PROVIDERS = [
-    { name: "Phantom", check: () => window.solana?.isPhantom, get: () => window.solana },
-    { name: "Solflare", check: () => window.solflare, get: () => window.solflare },
-    { name: "Backpack", check: () => window.backpack, get: () => window.backpack },
-    { name: "OKX", check: () => window.okxwallet?.solana, get: () => window.okxwallet.solana },
-    { name: "TokenPocket", check: () => window.tokenpocket?.solana, get: () => window.tokenpocket.solana }
-  ];
+  <script>
+  (function(){
+    // --- config ---
+    const { Connection, PublicKey } = solanaWeb3;
+    const TREASURY_WALLET = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
+    const SPITOUT_TOKEN_MINT = ""; // leave empty for now
+    const DECIMALS = 9;
 
-  async function connectWallet() {
-    for (const wallet of WALLET_PROVIDERS) {
-      if (wallet.check()) {
-        provider = wallet.get();
-        try {
-          await provider.connect();
-          publicKey = provider.publicKey;
-          
-          walletButton.textContent =
-            wallet.name + ": " +
-            publicKey.toString().slice(0, 4) + "..." + publicKey.toString().slice(-4);
+    // --- DOM ---
+    const walletSelect = document.getElementById("wallet-select");
+    const walletButton = document.getElementById("wallet-button");
+    const input = document.getElementById("input");
+    const sendButton = document.getElementById("send-button");
+    const messagesDiv = document.getElementById("messages");
+    const statusDiv = document.getElementById("status");
+    const debugDiv = document.getElementById("debug");
 
-          input.disabled = false;
-          sendButton.disabled = false;
+    const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
 
-          statusDiv.textContent = "Wallet verbunden – du kannst jetzt chatten.";
-          return;
-        } catch (err) {
-          console.error(wallet.name + " Fehler:", err);
+    // provider + publicKey will be set after connect
+    let provider = null;
+    let publicKey = null;
+
+    // helper: safe check & logging
+    function logDebug(...args){ console.log(...args); debugDiv.textContent = (new Date()).toLocaleTimeString() + " • " + args[0]; }
+
+    // known provider checks (function returns provider object or null)
+    const PROVIDERS = {
+      phantom: () => (window.solana && window.solana.isPhantom) ? window.solana : null,
+      solflare: () => (window.solflare && window.solflare.isSolflare) ? window.solflare : null,
+      backpack: () => (window.backpack && window.backpack.solana) ? window.backpack.solana : null,
+      bitget: () => (window.bitget && window.bitget.solana) ? window.bitget.solana : null,
+      binance: () => (window.BinanceChain && window.BinanceChain.solana) ? window.BinanceChain.solana : null,
+      okx: () => (window.okxwallet && window.okxwallet.solana) ? window.okxwallet.solana : null
+    };
+
+    // Auto-detect order (best-effort)
+    const AUTO_ORDER = ['phantom','solflare','backpack','bitget','binance','okx'];
+
+    // connect logic (dropdown driven or auto)
+    async function connectWallet() {
+      try {
+        let choice = walletSelect.value;
+        let prov = null;
+        if (choice === 'auto') {
+          // loop in preferred order and pick first available
+          for (const name of AUTO_ORDER) {
+            prov = PROVIDERS[name] ? PROVIDERS[name]() : null;
+            if (prov) { choice = name; break; }
+          }
+        } else {
+          prov = PROVIDERS[choice] ? PROVIDERS[choice]() : null;
         }
+
+        if (!prov) {
+          alert("Wallet not found for selection: " + choice + "\nMake sure the extension/app is installed and unlocked.");
+          logDebug("No provider for: " + choice);
+          return;
+        }
+
+        provider = prov;
+
+        // Many providers expose connect() that must be called from user gesture
+        if (typeof provider.connect === 'function') {
+          // Some providers (like Phantom) will return { publicKey } on connect()
+          const resp = await provider.connect();
+          // try several ways to get publicKey
+          publicKey = resp?.publicKey || provider.publicKey || (resp?.publicKey?.toString ? resp.publicKey : null);
+          // normalize to PublicKey object if string
+          if (publicKey && typeof publicKey !== 'object') {
+            try { publicKey = new PublicKey(publicKey.toString()); }
+            catch(e){ /* ignore */ }
+          } else if (publicKey && publicKey.toBase58) {
+            // already PublicKey-like (Phantom)
+          }
+        } else {
+          // If provider doesn't have connect (rare), try to read provider.publicKey
+          publicKey = provider.publicKey || null;
+        }
+
+        if (!publicKey) {
+          // final attempt: provider.publicKey may be object with toString()
+          if (provider && provider.publicKey && provider.publicKey.toString) {
+            publicKey = new PublicKey(provider.publicKey.toString());
+          }
+        }
+
+        if (!publicKey) {
+          alert("Connected but couldn't read public key. See console for details.");
+          console.error("Provider connected but no publicKey:", provider);
+          return;
+        }
+
+        // show connected
+        walletButton.textContent = `Connected: ${publicKey.toString().slice(0,4)}...${publicKey.toString().slice(-4)}`;
+        statusDiv.textContent = `Connected to ${choice}. You can now chat.`;
+        input.disabled = false;
+        sendButton.disabled = false;
+        logDebug("Connected", choice, publicKey.toString());
+
+        // listen for disconnect if provider supports event
+        if (typeof provider.on === 'function') {
+          try {
+            provider.on('disconnect', () => {
+              provider = null; publicKey = null;
+              walletButton.textContent = "Connect Wallet";
+              input.disabled = true; sendButton.disabled = true;
+              statusDiv.textContent = "Wallet disconnected.";
+              logDebug("Wallet disconnected");
+            });
+          } catch(e){ /* ignore */ }
+        }
+      } catch (err) {
+        console.error("connectWallet error:", err);
+        alert("Connection failed: " + (err?.message || err));
+        logDebug("connect error: " + (err?.message || err));
       }
     }
 
-    alert("Keine kompatible Solana Wallet gefunden!");
-  }
+    // append message
+    function appendMessage(pkStr, text) {
+      const row = document.createElement('div');
+      row.className = 'message';
+      const walletLine = `<div class="wallet">${pkStr.slice(0,4)}...${pkStr.slice(-4)}</div>`;
+      row.innerHTML = walletLine + text;
+      messagesDiv.appendChild(row);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
 
-  async function sendMessage() {
-    const msg = input.value.trim();
-    if (!msg) return;
+    // send (no token mint set => simulate)
+    async function sendMessage() {
+      if (!publicKey) { alert('Connect wallet first'); return; }
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      appendMessage(publicKey.toString(), msg);
 
-    input.value = "";
-    appendMessage(publicKey.toString(), msg);
+      if (!SPITOUT_TOKEN_MINT) {
+        statusDiv.textContent = '⚠️ Token mint not set — transaction skipped (demo mode).';
+        return;
+      }
 
-    statusDiv.textContent = "Sent 1 USD in SPITOUT (Demo-Mode).";
-  }
+      // If you later set SPITOUT_TOKEN_MINT, implement SPL transfer here.
+      // Keep UX responsive: we show a "sent" message after the on-chain transfer completes.
+    }
 
-  function appendMessage(wallet, text) {
-    const div = document.createElement("div");
-    div.className = "message";
-    div.innerHTML = `<div class="wallet">${wallet.slice(0,4)}...${wallet.slice(-4)}</div>${text}`;
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  }
+    // wiring
+    walletButton.addEventListener('click', connectWallet);
+    sendButton.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') sendButton.click(); });
 
-  walletButton.addEventListener("click", connectWallet);
-  sendButton.addEventListener("click", sendMessage);
-</script>
+    // initial message
+    appendMessage('system', 'Welcome to SPITOUT — connect a wallet to post. (Demo mode until mint set)');
+
+    // safe: expose debug to console
+    window.__SPITOUT = { connectWallet, sendMessage, connection };
+
+  })();
+  </script>
+</body>
+</html>
