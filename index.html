@@ -1,211 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SPITOUT Chat</title>
-  <link rel="icon" type="image/png" href="logo.png" />
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: radial-gradient(circle at top, #0a0a0a 0%, #000 100%);
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    img.logo {
-      width: 140px;
-      margin: 40px auto 10px;
-      display: block;
-    }
-    h1 {
-      font-size: 2rem;
-      color: #00ffc3;
-      margin-bottom: 20px;
-      text-shadow: 0 0 10px #00ffc3;
-    }
-    #wallet-select, #wallet-button {
-      background: #00ffc3;
-      color: #000;
-      border: none;
-      padding: 12px 24px;
-      font-size: 1rem;
-      border-radius: 12px;
-      cursor: pointer;
-      margin-bottom: 10px;
-      transition: all 0.3s ease;
-    }
-    #wallet-button:hover, #wallet-select:hover {
-      background: #00e0b3;
-      transform: scale(1.05);
-    }
-    #wallet-select {
-      margin-bottom: 15px;
-    }
-    #chat-container {
-      width: 90%;
-      max-width: 600px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-      padding: 20px;
-      backdrop-filter: blur(8px);
-    }
-    #messages {
-      height: 300px;
-      overflow-y: auto;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      margin-bottom: 10px;
-      padding-bottom: 10px;
-    }
-    .message {
-      margin: 8px 0;
-      padding: 8px 10px;
-      background: rgba(0,255,195,0.1);
-      border-radius: 8px;
-      word-wrap: break-word;
-    }
-    .wallet {
-      font-size: 0.8rem;
-      opacity: 0.7;
-    }
-    #input-area {
-      display: flex;
-      gap: 10px;
-    }
-    #input {
-      flex: 1;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      outline: none;
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-    }
-    #send-button {
-      background: #00ffc3;
-      color: #000;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    #send-button:hover {
-      background: #00e0b3;
-    }
-    #status {
-      margin-top: 8px;
-      font-size: 0.9rem;
-      color: #aaa;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <img src="logo.png" alt="Logo" class="logo" />
-  <h1>SPITOUT Chat</h1>
+<script>
+  const { Connection, PublicKey } = solanaWeb3;
 
-  <!-- Wallet Auswahl -->
-  <select id="wallet-select">
-    <option value="phantom">Phantom</option>
-    <option value="solflare">Solflare</option>
-    <option value="bitget">Bitget Wallet</option>
-    <option value="binance">Binance Web3 Wallet</option>
-  </select>
+  const treasuryWallet = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
+  const SPITOUT_TOKEN_MINT = ""; 
 
-  <button id="wallet-button">Connect Wallet</button>
+  let provider = null;
+  let publicKey = null;
 
-  <div id="chat-container">
-    <div id="messages"></div>
-    <div id="input-area">
-      <input id="input" type="text" placeholder="Type your message..." disabled />
-      <button id="send-button" disabled>Send</button>
-    </div>
-  </div>
-  <div id="status">Connect your wallet to start chatting.</div>
+  const connection = new Connection("https://api.mainnet-beta.solana.com");
 
-  <!-- Solana Wallet Adapter -->
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+  const walletButton = document.getElementById("wallet-button");
+  const input = document.getElementById("input");
+  const sendButton = document.getElementById("send-button");
+  const messagesDiv = document.getElementById("messages");
+  const statusDiv = document.getElementById("status");
 
-  <script>
-    const { Connection, PublicKey } = solanaWeb3;
+  // 🔥 Liste möglicher Wallets (automatische Erkennung)
+  const WALLET_PROVIDERS = [
+    { name: "Phantom", check: () => window.solana?.isPhantom, get: () => window.solana },
+    { name: "Solflare", check: () => window.solflare, get: () => window.solflare },
+    { name: "Backpack", check: () => window.backpack, get: () => window.backpack },
+    { name: "OKX", check: () => window.okxwallet?.solana, get: () => window.okxwallet.solana },
+    { name: "TokenPocket", check: () => window.tokenpocket?.solana, get: () => window.tokenpocket.solana }
+  ];
 
-    const treasuryWallet = new PublicKey("7psAd7T6gCyp9rzKS8xMYa6yBQjLNEi5nJB8qPqtXxQb");
-    const SPITOUT_TOKEN_MINT = ""; // bleibt leer
+  async function connectWallet() {
+    for (const wallet of WALLET_PROVIDERS) {
+      if (wallet.check()) {
+        provider = wallet.get();
+        try {
+          await provider.connect();
+          publicKey = provider.publicKey;
+          
+          walletButton.textContent =
+            wallet.name + ": " +
+            publicKey.toString().slice(0, 4) + "..." + publicKey.toString().slice(-4);
 
-    let provider = null;
-    let publicKey = null;
+          input.disabled = false;
+          sendButton.disabled = false;
 
-    const connection = new Connection("https://api.mainnet-beta.solana.com");
-
-    const walletSelect = document.getElementById("wallet-select");
-    const walletButton = document.getElementById("wallet-button");
-    const input = document.getElementById("input");
-    const sendButton = document.getElementById("send-button");
-    const messagesDiv = document.getElementById("messages");
-    const statusDiv = document.getElementById("status");
-
-    async function connectWallet() {
-      const selected = walletSelect.value;
-
-      if (selected === "phantom" && window.phantom?.solana?.isPhantom) {
-        provider = window.phantom.solana;
-      } 
-      else if (selected === "solflare" && window.solflare?.isSolflare) {
-        provider = window.solflare;
+          statusDiv.textContent = "Wallet verbunden – du kannst jetzt chatten.";
+          return;
+        } catch (err) {
+          console.error(wallet.name + " Fehler:", err);
+        }
       }
-      else if (selected === "bitget" && window.bitkeep?.solana) {
-        provider = window.bitkeep.solana;
-      }
-      else if (selected === "binance" && window.BinanceChain) {
-        provider = window.BinanceChain;
-      }
-      else {
-        alert(`${selected} Wallet not found in browser!`);
-        return;
-      }
-
-      await provider.connect();
-      publicKey = provider.publicKey;
-
-      walletButton.textContent =
-        "Connected: " +
-        publicKey.toString().slice(0, 4) +
-        "..." +
-        publicKey.toString().slice(-4);
-
-      input.disabled = false;
-      sendButton.disabled = false;
-      statusDiv.textContent = "You can now chat. Each post sends 1 USD in SPITOUT.";
     }
 
-    function appendMessage(wallet, text) {
-      const div = document.createElement("div");
-      div.className = "message";
-      div.innerHTML =
-        `<div class="wallet">${wallet.slice(0, 4)}...${wallet.slice(-4)}</div>` +
-        text;
+    alert("Keine kompatible Solana Wallet gefunden!");
+  }
 
-      messagesDiv.appendChild(div);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
+  async function sendMessage() {
+    const msg = input.value.trim();
+    if (!msg) return;
 
-    async function sendMessage() {
-      const msg = input.value.trim();
-      if (!msg) return;
+    input.value = "";
+    appendMessage(publicKey.toString(), msg);
 
-      input.value = "";
-      appendMessage(publicKey.toString(), msg);
+    statusDiv.textContent = "Sent 1 USD in SPITOUT (Demo-Mode).";
+  }
 
-      statusDiv.textContent = "Sent 1 USD worth of SPITOUT to Treasury Wallet.";
-    }
+  function appendMessage(wallet, text) {
+    const div = document.createElement("div");
+    div.className = "message";
+    div.innerHTML = `<div class="wallet">${wallet.slice(0,4)}...${wallet.slice(-4)}</div>${text}`;
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
 
-    walletButton.addEventListener("click", connectWallet);
-    sendButton.addEventListener("click", sendMessage);
-  </script>
-</body>
-</html>
+  walletButton.addEventListener("click", connectWallet);
+  sendButton.addEventListener("click", sendMessage);
+</script>
